@@ -2,7 +2,7 @@
   "name": "coffecode-fe",
   "version": "0.0.1",
   "description": "A Quasar Project",
-  "productName": "Quasar App",
+  "productName": "BeanBytes",
   "author": "Moeen Sedaqati <moeensedaghaty86@gmail.com>",
   "type": "module",
   "private": true,
