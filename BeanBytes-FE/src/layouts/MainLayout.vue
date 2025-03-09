@@ -35,12 +35,12 @@
                 <q-item-section>My Feed</q-item-section>
               </q-item>
 
-              <q-item clickable v-ripple to="/groups">
+              <q-item clickable disable v-ripple to="/groups">
                 <q-item-section avatar><q-icon name="groups" /></q-item-section>
                 <q-item-section>Groups</q-item-section>
               </q-item>
 
-              <q-item clickable v-ripple to="/messages">
+              <q-item clickable disable v-ripple to="/messages">
                 <q-item-section avatar><q-icon name="message" /></q-item-section>
                 <q-item-section>Messages</q-item-section>
 
@@ -56,7 +56,7 @@
 
               <q-separator color="grey-9" class="q-my-sm" />
 
-              <q-item clickable v-ripple to="/notifications">
+              <q-item clickable disable v-ripple to="/notifications">
                 <q-item-section avatar><q-icon name="notifications" /></q-item-section>
                 <q-item-section>Notifications</q-item-section>
 
@@ -72,7 +72,7 @@
 
               <q-separator color="grey-9" class="q-my-sm" />
 
-              <q-item clickable v-ripple to="/profile">
+              <q-item clickable v-ripple>
                 <q-item-section avatar>
                   <q-avatar><img src="profile.jpg" /></q-avatar>
                 </q-item-section>
