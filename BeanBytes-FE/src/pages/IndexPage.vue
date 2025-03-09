@@ -1,155 +1,71 @@
 <template>
-  <q-page class="bg-dark text-secondary">
-    <div class="row justify-between bg-dark text-white text-grey-6">
-      <div class="sidebar-container col-2 text-secondary">
-        <div class="left-sidebar">
-          <div class="q-px-lg">
-            <q-avatar style="height: 55px">
-              <img src="https://cdn.quasar.dev/logo-v2/svg/logo-mono-white.svg" />
-            </q-avatar>
+  <q-page class="bg-dark text-secondary row justify-center">
+    <div class="bg-dark text-white text-grey-6 col-8">
+      <!-- Add new post -->
+
+      <div class="q-pt-lg">
+        <div class="">
+          <div class="post-input">
+            <textarea placeholder="New Post"></textarea>
           </div>
 
-          <q-separator dark />
+          <div class="post-actions">
+            <div class="action-left">
+              <button class="icon-btn">
+                <q-icon name="code" size="24px" color="grey-6" />
+              </button>
 
-          <div class="sidebar-content">
-            <q-list class="q-px-lg">
-              <q-item clickable v-ripple to="/feed">
-                <q-item-section avatar><q-icon name="home" /></q-item-section>
-                <q-item-section>My Feed</q-item-section>
-              </q-item>
-
-              <q-item clickable v-ripple to="/groups">
-                <q-item-section avatar><q-icon name="groups" /></q-item-section>
-                <q-item-section>Groups</q-item-section>
-              </q-item>
-
-              <q-item clickable v-ripple to="/messages">
-                <q-item-section avatar><q-icon name="message" /></q-item-section>
-                <q-item-section>Messages</q-item-section>
-                <q-badge color="orange" label="1" rounded />
-              </q-item>
-
-              <q-item clickable v-ripple to="/bookmarks">
-                <q-item-section avatar><q-icon name="bookmark" /></q-item-section>
-                <q-item-section>Bookmarks</q-item-section>
-              </q-item>
-
-              <q-separator color="grey-9" class="q-my-sm" />
-
-              <q-item clickable v-ripple to="/notifications">
-                <q-item-section avatar><q-icon name="notifications" /></q-item-section>
-                <q-item-section>Notifications</q-item-section>
-                <q-badge color="grey" label="3" rounded />
-              </q-item>
-
-              <q-item clickable v-ripple to="/settings/account">
-                <q-item-section avatar><q-icon name="settings" /></q-item-section>
-                <q-item-section>Settings</q-item-section>
-              </q-item>
-
-              <q-separator color="grey-9" class="q-my-sm" />
-
-              <q-item clickable v-ripple to="/profile">
-                <q-item-section avatar>
-                  <q-avatar><img src="profile.jpg" /></q-avatar>
-                </q-item-section>
-                <q-item-section>Robert J.</q-item-section>
-              </q-item>
-            </q-list>
-          </div>
-
-          <div class="sidebar-footer">
-            <q-separator color="" class="q-my-sm" dark />
-
-            <div class="row justify-between items-center">
-              Dark Theme
-
-              <q-toggle v-model="darkMode" />
+              <button class="icon-btn">
+                <q-icon name="photo_camera" size="24px" color="grey-6" />
+              </button>
             </div>
+
+            <button class="post-btn">
+              <q-icon name="send" size="24px" color="secondary" />
+            </button>
           </div>
         </div>
       </div>
 
-      <div class="col">
-        <!-- Search in developer or post tags -->
+      <div class="q-mt-lg q-gutter-y-md">
+        <!-- Tabs -->
 
-        <q-input
-          borderless
-          dark
-          input-class="text-grey-6 col"
-          v-model="searchInput"
-          placeholder="Search"
-          style="height: 55px"
-        >
-          <template v-slot:prepend>
-            <q-icon class="cursor-pointer" color="grey-6" name="search" @click="search" />
-          </template>
-        </q-input>
+        <div class="row q-ml-sm">
+          <div class="flex items-center" @click="postsTabs = 'following'">
+            <q-icon size="24px" name="favorite" :color="postsTabs == 'following' ? 'red' : ''" />
 
-        <q-separator dark />
+            <span class="q-pl-sm">Following</span>
+          </div>
 
-        <!-- Add new post -->
+          <div class="flex items-center q-ml-lg" @click="postsTabs = 'featured'">
+            <q-icon
+              size="24px"
+              name="local_fire_department"
+              :color="postsTabs == 'featured' ? 'orange' : ''"
+            />
 
-        <div class="q-mt-lg">
-          <div class="new-post-box">
-            <div class="post-input">
-              <textarea placeholder="New Post"></textarea>
-            </div>
+            <span class="q-pl-sm">Featured</span>
+          </div>
 
-            <div class="post-actions">
-              <div class="action-left">
-                <button class="icon-btn">
-                  <q-icon name="code" size="24px" color="grey-6" />
-                </button>
+          <div class="flex items-center q-ml-lg" @click="postsTabs = 'trends'">
+            <q-icon
+              size="24px"
+              name="rocket_launch"
+              :color="postsTabs == 'trends' ? 'yellow' : ''"
+            />
 
-                <button class="icon-btn">
-                  <q-icon name="photo_camera" size="24px" color="grey-6" />
-                </button>
-              </div>
-
-              <button class="post-btn">
-                <q-icon name="send" size="24px" color="secondary" />
-              </button>
-            </div>
+            <span class="q-pl-sm">Trends</span>
           </div>
         </div>
 
-        <div class="q-mt-lg q-gutter-y-md">
-          <!-- Tabs -->
+        <!-- Posts -->
 
-          <div class="row q-ml-sm">
-            <div class="flex items-center" @click="postsTabs = 'following'">
-              <q-icon size="24px" name="favorite" :color="postsTabs == 'following' ? 'red' : ''" />
-
-              <span class="q-pl-sm">Following</span>
-            </div>
-
-            <div class="flex items-center q-ml-lg" @click="postsTabs = 'featured'">
-              <q-icon
-                size="24px"
-                name="local_fire_department"
-                :color="postsTabs == 'featured' ? 'orange' : ''"
-              />
-
-              <span class="q-pl-sm">Featured</span>
-            </div>
-
-            <div class="flex items-center q-ml-lg" @click="postsTabs = 'trends'">
-              <q-icon
-                size="24px"
-                name="rocket_launch"
-                :color="postsTabs == 'trends' ? 'yellow' : ''"
-              />
-
-              <span class="q-pl-sm">Trends</span>
-            </div>
-          </div>
-
-          <div
-            class="q-pa-md q-ml-sm"
-            style="border: 2px solid grey; border-radius: 4px; margin-right: 12px"
-          >
-            <div class="cursor-pointer row items-center q-gutter-x-md">
+        <div
+          class="q-pa-md q-ml-sm"
+          style="border: 2px solid grey; border-radius: 4px; margin-right: 12px"
+        >
+          <div class="row justify-between">
+            <div class="cursor-pointer row q-gutter-x-md">
               <q-avatar size="32px"><img src="profile.jpg" /></q-avatar>
 
               <div>
@@ -159,57 +75,109 @@
               </div>
             </div>
 
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Id quo debitis pariatur dolor
-            saepe quas sed provident ab quasi ducimus. Sit quae reiciendis amet voluptatibus,
-            debitis repellendus harum quas nam.
+            <q-icon name="sym_o_bookmark" size="24px" class="cursor-pointer" @click="savePost(post.id)" />
+          </div>
 
-            <br />
-            <br />
+          Lorem ipsum dolor sit amet consectetur adipisicing elit. Id quo debitis pariatur dolor
+          saepe quas sed provident ab quasi ducimus. Sit quae reiciendis amet voluptatibus, debitis
+          repellendus harum quas nam.
 
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Id quo debitis pariatur dolor
-            saepe quas sed provident ab quasi ducimus. Sit quae reiciendis amet voluptatibus,
-            debitis repellendus harum quas nam. Lorem ipsum dolor sit amet consectetur adipisicing
-            elit. Id quo debitis pariatur dolor saepe quas sed provident ab quasi ducimus. Sit quae
-            reiciendis amet voluptatibus, debitis repellendus harum quas nam.
+          <br />
+          <br />
 
-            <q-img src="https://cdn.quasar.dev/logo-v2/svg/logo-mono-white.svg" />
+          Lorem ipsum dolor sit amet consectetur adipisicing elit. Id quo debitis pariatur dolor
+          saepe quas sed provident ab quasi ducimus. Sit quae reiciendis amet voluptatibus, debitis
+          repellendus harum quas nam. Lorem ipsum dolor sit amet consectetur adipisicing elit. Id
+          quo debitis pariatur dolor saepe quas sed provident ab quasi ducimus. Sit quae reiciendis
+          amet voluptatibus, debitis repellendus harum quas nam.
+
+          <!-- Code -->
+
+          <div class="q-py-md">
+            <q-card class="bg-dark text-white">
+              <q-card-section class="row justify-between">
+                <div class="text-bold">Code Snippet</div>
+
+                <q-icon name="content_copy" @click="copyCode" class="cursor-pointer" size="16px" />
+              </q-card-section>
+
+              <q-separator dark />
+
+              <q-card-section>
+                <pre><code ref="codeBlock" class="language-javascript">{{ codeSnippet }}</code></pre>
+              </q-card-section>
+
+              <q-expansion-item expand-separator label="Show Full Code">
+                <q-card-section>
+                  <pre><code ref="fullCodeBlock" class="language-javascript">{{ fullCode }}</code></pre>
+                </q-card-section>
+              </q-expansion-item>
+            </q-card>
+          </div>
+
+          <!-- Assets like video ro image -->
+
+          <div class="q-py-md">
+            <q-img
+              style="max-height: 500px"
+              src="https://cdn.quasar.dev/logo-v2/svg/logo-mono-white.svg"
+            />
+          </div>
+
+          <!-- Tags and action buttons -->
+
+          <div class="q-pt-md q-gutter-y-sm">
+            <div class="cursor-pointer" style="padding-left: 15px" @click="search(post.tag)">
+              #tag
+            </div>
+
+            <div class="row">
+              <div class="post-actionButtons"><q-icon name="thumb_up" size="16px" /> 204</div>
+
+              <div class="post-actionButtons"><q-icon name="chat" size="16px" /> 24</div>
+
+              <div class="post-actionButtons"><q-icon name="share" size="16px" /> 40</div>
+            </div>
           </div>
         </div>
-      </div>
-
-      <div class="col-3">
-        <div class="row justify-between col-2" style="height: 55px">
-          <q-btn flat label="Discuss" />
-
-          <q-btn flat label="Discover" />
-
-          <q-btn flat label="Hackatons" />
-        </div>
-
-        <q-separator dark />
-
-        <div class="q-mt-lg"></div>
       </div>
     </div>
   </q-page>
 </template>
 
-<script>
-import { ref } from 'vue'
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useQuasar } from 'quasar'
+import 'highlight.js/styles/github-dark.min.css'
+import hljs from 'highlight.js'
 
-export default {
-  setup() {
-    const search = ref()
-    const darkMode = ref(true)
-    const postsTabs = ref('following')
-
-    return {
-      search,
-      darkMode,
-      postsTabs,
-    }
-  },
+const $q = useQuasar()
+const search = ref()
+const postsTabs = ref('following')
+const fullCode = ref(
+  `
+function greet() {
+  console.log("Hello, World!");
+  console.log("This is a test line.");
+  console.log("Another line of code.");
+  console.log("This part should be hidden.");
 }
+`.trim(),
+)
+
+const codeSnippet = ref(fullCode.value.split('\n').slice(0, 4).join('\n'))
+
+const codeBlock = ref(null)
+const fullCodeBlock = ref(null)
+
+function copyCode() {
+  navigator.clipboard.writeText(fullCode.value)
+  $q.notify({ message: 'Copied to clipboard!', color: 'green' })
+}
+
+onMounted(() => {
+  hljs.highlightAll()
+})
 </script>
 
 <style scoped>
@@ -306,5 +274,33 @@ export default {
 .post-btn {
   padding: 0.5rem 1rem;
   cursor: pointer;
+}
+
+.post-actionButtons {
+  padding: 15px;
+  border-radius: 4px;
+  transition: ease-in 0.3s;
+}
+
+.post-actionButtons:hover {
+  color: #d9ac30;
+  background: #7e600f;
+}
+
+.code-card {
+  background: #1e1e1e;
+  color: white;
+  font-family: 'Fira Code', monospace;
+}
+
+.code-header {
+  padding: 10px 15px;
+  font-weight: bold;
+}
+
+.code-content {
+  max-height: 150px;
+  overflow: hidden;
+  white-space: pre-wrap;
 }
 </style>
