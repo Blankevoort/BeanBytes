@@ -103,6 +103,5 @@ const darkMode = ref(true)
   padding: 16px;
   position: sticky;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
 }
 </style>

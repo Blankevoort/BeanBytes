@@ -100,3 +100,21 @@ meter {
 .q-drawer {
   position: fixed;
 }
+
+.cart-btn {
+  font-size: 14px;
+  padding: 2px 25px;
+  font-weight: bold;
+  background-color: #ff4748 !important;
+  color: white !important;
+  transition: 0.3s !important;
+  border-radius: 12px;
+}
+
+.cart-btn i {
+  padding-right: 10px;
+}
+
+.cart-btn:hover {
+  background-color: #42474e !important;
+}

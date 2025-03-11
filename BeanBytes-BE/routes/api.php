@@ -19,11 +19,11 @@ Route::middleware('auth:sanctum')->group(function () {
         return $request->user();
     });
 
-    Route::post('/user/update', [UserController::class, 'updateProfile']);
-    Route::post('/user/picture', [UserController::class, 'updateProfilePicture']);
+    Route::get('/user/bookmakred/{$postId}', [UserController::class, 'userBookmarks']);
+    Route::put('/user/update', [UserController::class, 'updateUser']);
     Route::post('/add-post/comment', [UserController::class, 'addComment']);
     Route::post('/add-post/share', [UserController::class, 'sharePost']);
-    Route::post('/add-post/save', [UserController::class, 'savePost']);
+    Route::post('/post/add-save', [UserController::class, 'savePost']);
 
     Route::post('/add-post', [PostController::class, 'createPost']);
     Route::put('/edit-post/{post}', [PostController::class, 'editPost']);

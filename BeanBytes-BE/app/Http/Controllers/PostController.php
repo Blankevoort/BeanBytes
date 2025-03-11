@@ -47,7 +47,7 @@ class PostController extends Controller
     {
         $request->validate([
             'content' => 'required|string',
-            'visibility' => 'required|in:public,private,friends',
+            'visibility' => 'nullable|in:public,private,friends',
             'tags' => 'nullable|array',
             'tags.*' => 'string',
             'assets' => 'nullable|array',
@@ -57,12 +57,18 @@ class PostController extends Controller
         $post = Post::create([
             'user_id' => Auth::id(),
             'content' => $request->content,
-            'visibility' => $request->visibility,
+            'fullCode' => $request->fullCode,
+            'visibility' => $request->input('visibility', 'private'),
         ]);
 
-        if ($request->has('tags')) {
+        preg_match_all('/#([\p{L}0-9_]+)/u', $request->content, $matches);
+        $hashtags = $matches[1] ?? [];
+
+        $allTags = array_unique(array_merge($hashtags, $request->tags ?? []));
+
+        if (!empty($allTags)) {
             $tagIds = [];
-            foreach ($request->tags as $tagName) {
+            foreach ($allTags as $tagName) {
                 $tag = Tag::firstOrCreate(
                     ['name' => $tagName],
                     ['slug' => Str::slug($tagName)]

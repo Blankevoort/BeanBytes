@@ -1,12 +1,12 @@
 <template>
-  <q-page class="bg-dark text-secondary row justify-center">
-    <div class="bg-dark text-white text-grey-6 col-sm-10 col-md-10 col-lg-8 col-xl-8">
+  <q-page class="bg-dark row justify-center">
+    <div class="text-grey-6 col-sm-10 col-md-10 col-lg-8 col-xl-8">
       <!-- Add new post -->
 
       <div class="q-pt-lg">
-        <div class="">
+        <q-form @submit="addPost">
           <div class="post-input">
-            <textarea placeholder="New Post"></textarea>
+            <textarea placeholder="New Post" v-model="content"></textarea>
           </div>
 
           <div class="post-actions">
@@ -20,11 +20,11 @@
               </button>
             </div>
 
-            <button class="post-btn">
+            <button type="submit" class="post-btn">
               <q-icon name="send" size="24px" color="secondary" />
             </button>
           </div>
-        </div>
+        </q-form>
       </div>
 
       <div class="q-mt-lg q-gutter-y-md">
@@ -60,17 +60,49 @@
 
         <!-- Posts -->
 
-        <PostCard />
+        <div v-if="posts">
+          <PostCard v-for="post in posts" :key="post.id" :post="post" />
+        </div>
+
+        <div v-else>No posts found.</div>
       </div>
     </div>
   </q-page>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
+import { api } from 'src/boot/axios'
 import PostCard from 'src/components/PostCard.vue'
 
 const postsTabs = ref('following')
+const content = ref()
+const posts = ref([])
+
+async function fetchPosts() {
+  try {
+    const r = await api.get('/api/get-posts')
+    posts.value = r.data
+  } catch (error) {
+    console.error('Error fetching posts:', error.r?.data || error.message)
+  }
+}
+
+function addPost() {
+  const postData = new FormData()
+  postData.append('content', content.value)
+
+  api
+    .post('/api/add-post', postData)
+    .then((response) => {
+      console.log('Post created successfully:', response.data)
+    })
+    .catch((error) => {
+      console.error('Error creating post:', error.response.data)
+    })
+}
+
+onMounted(fetchPosts)
 </script>
 
 <style scoped>

@@ -1,127 +1,141 @@
 <template>
   <div
-    class="q-pa-md q-ml-sm"
+    class="q-pa-md q-ml-sm q-my-md"
     style="border: 2px solid grey; border-radius: 4px; margin-right: 12px"
   >
     <div class="row justify-between">
       <div class="cursor-pointer row q-gutter-x-md">
-        <q-avatar size="32px"><img src="profile.jpg" /></q-avatar>
+        <q-avatar size="32px">
+          <img :src="post.user.profile_picture || 'default-profile.jpg'" />
+        </q-avatar>
 
         <div>
-          <p>Robert J.</p>
-
-          <p style="font-size: 12px">2 hours ago</p>
+          <p>{{ post.user.username }}</p>
+          <p style="font-size: 12px">{{ formatDate(post.created_at) }}</p>
         </div>
       </div>
 
       <q-icon
-        name="bookmark"
+        :name="post.saved ? 'sym_o_bookmark' : 'bookmark'"
         size="24px"
         class="cursor-pointer"
         @click="savePost(post.id)"
-        v-if="false"
-      />
-
-      <q-icon
-        name="sym_o_bookmark"
-        size="24px"
-        class="cursor-pointer"
-        @click="savePost(post.id)"
-        v-else
       />
     </div>
 
-    Lorem ipsum dolor sit amet consectetur adipisicing elit. Id quo debitis pariatur dolor saepe
-    quas sed provident ab quasi ducimus. Sit quae reiciendis amet voluptatibus, debitis repellendus
-    harum quas nam.
+    <p>{{ post.content }}</p>
 
-    <br />
-    <br />
-
-    Lorem ipsum dolor sit amet consectetur adipisicing elit. Id quo debitis pariatur dolor saepe
-    quas sed provident ab quasi ducimus. Sit quae reiciendis amet voluptatibus, debitis repellendus
-    harum quas nam. Lorem ipsum dolor sit amet consectetur adipisicing elit. Id quo debitis pariatur
-    dolor saepe quas sed provident ab quasi ducimus. Sit quae reiciendis amet voluptatibus, debitis
-    repellendus harum quas nam.
-
-    <!-- Code -->
-
-    <div class="q-py-md">
+    <div v-if="post.fullCode" class="q-py-md">
       <q-card class="bg-dark text-white">
         <q-card-section class="row justify-between">
           <div class="text-bold">Code Snippet</div>
-
-          <q-icon name="content_copy" @click="copyCode" class="cursor-pointer" size="16px" />
+          <q-icon
+            name="content_copy"
+            @click="copyCode(post.fullCode)"
+            class="cursor-pointer"
+            size="16px"
+          />
         </q-card-section>
 
         <q-separator dark />
 
         <q-card-section>
-          <pre><code ref="codeBlock" class="language-javascript">{{ codeSnippet }}</code></pre>
+          <pre><code class="language-javascript">{{ post.fullCode }}</code></pre>
         </q-card-section>
-
-        <q-expansion-item expand-separator label="Show Full Code">
-          <q-card-section>
-            <pre><code ref="fullCodeBlock" class="language-javascript">{{ fullCode }}</code></pre>
-          </q-card-section>
-        </q-expansion-item>
       </q-card>
     </div>
 
-    <!-- Assets like video ro image -->
-
-    <div class="q-py-md">
+    <div v-if="post.assets" class="q-py-md">
       <q-img
+        v-for="asset in post.assets"
+        :key="asset.id"
+        :src="asset.path"
         style="max-height: 500px"
-        src="https://cdn.quasar.dev/logo-v2/svg/logo-mono-white.svg"
       />
     </div>
 
-    <!-- Tags and action buttons -->
-
     <div class="q-pt-md q-gutter-y-sm">
-      <div class="cursor-pointer" style="padding-left: 15px" @click="search(post.tag)">#tag</div>
+      <div
+        v-for="tag in post.tags"
+        :key="tag.id"
+        class="cursor-pointer"
+        style="padding-left: 15px"
+        @click="search(tag.name)"
+      >
+        #{{ tag.name }}
+      </div>
 
-      <div class="row">
-        <div class="post-actionButtons"><q-icon name="thumb_up" size="16px" /> 204</div>
+      <div class="row q-gutter-x-md">
+        <div class="post-actionButtons">
+          <q-icon name="thumb_up" size="16px" /> {{ post.likes_count }}
+        </div>
 
-        <div class="post-actionButtons"><q-icon name="chat" size="16px" /> 24</div>
+        <div class="post-actionButtons">
+          <q-icon name="chat" size="16px" /> {{ post.comments_count }}
+        </div>
 
-        <div class="post-actionButtons"><q-icon name="share" size="16px" /> 40</div>
+        <div class="post-actionButtons">
+          <q-icon name="share" size="16px" /> {{ post.shares_count }}
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { defineProps } from 'vue'
 import { useQuasar } from 'quasar'
-import 'highlight.js/styles/github-dark.min.css'
-import hljs from 'highlight.js'
+import { api } from 'src/boot/axios'
 
 const $q = useQuasar()
-const fullCode = ref(
-  `
-function greet() {
-  console.log("Hello, World!");
-  console.log("This is a test line.");
-  console.log("Another line of code.");
-  console.log("This part should be hidden.");
+defineProps({
+  post: Object,
+})
+
+function savePost(postId) {
+  const postData = new FormData()
+  postData.append('post_id', postId)
+
+  api
+    .post('/api/post/add-save', postData)
+    .then((response) => {
+      console.log('Post saved successfully:', response.data)
+    })
+    .catch((error) => {
+      console.error('Error saving post:', error.response.data)
+    })
 }
-`.trim(),
-)
 
-const codeSnippet = ref(fullCode.value.split('\n').slice(0, 4).join('\n'))
+function formatDate(date) {
+  const now = new Date()
+  const past = new Date(date)
 
-const codeBlock = ref(null)
-const fullCodeBlock = ref(null)
+  const diffInSeconds = Math.floor((now.getTime() - past.getTime()) / 1000)
 
-function copyCode() {
-  navigator.clipboard.writeText(fullCode.value)
+  if (diffInSeconds < 0) {
+    return 'Just now'
+  }
+
+  if (diffInSeconds < 60) return `${diffInSeconds} seconds ago`
+
+  const diffInMinutes = Math.floor(diffInSeconds / 60)
+  if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`
+
+  const diffInHours = Math.floor(diffInMinutes / 60)
+  if (diffInHours < 24) return `${diffInHours} hours ago`
+
+  const diffInDays = Math.floor(diffInHours / 24)
+  if (diffInDays < 30) return `${diffInDays} days ago`
+
+  const diffInMonths = Math.floor(diffInDays / 30)
+  if (diffInMonths < 12) return `${diffInMonths} months ago`
+
+  const diffInYears = Math.floor(diffInMonths / 12)
+  return `${diffInYears} years ago`
+}
+
+function copyCode(code) {
+  navigator.clipboard.writeText(code)
   $q.notify({ message: 'Copied to clipboard!', color: 'green' })
 }
-
-onMounted(() => {
-  hljs.highlightAll()
-})
 </script>

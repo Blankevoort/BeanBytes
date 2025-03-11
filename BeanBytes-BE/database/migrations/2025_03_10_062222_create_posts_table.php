@@ -11,6 +11,7 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->text('content');
+            $table->text('fullCode')->nullable();
             $table->enum('visibility', ['public', 'private', 'friends'])->default('public');
             $table->timestamps();
         });

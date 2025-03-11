@@ -18,44 +18,40 @@ class UserController extends Controller
         $user = Auth::user();
 
         $request->validate([
-            'fullname' => 'nullable|string|max:255',
-            'username' => 'nullable|string|max:255|unique:users,username,' . $user->id,
-            'email' => 'nullable|email|unique:users,email,' . $user->id,
-            'password' => 'nullable|min:6',
+            'fullname'  => 'nullable|string|max:255',
+            'username'  => 'nullable|string|max:255|unique:users,username,' . $user->id,
+            'email'     => 'nullable|email|unique:users,email,' . $user->id,
+            'password'  => 'nullable|min:6',
+            'image'     => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
 
         if ($request->has('password')) {
             $user->password = Hash::make($request->password);
         }
 
-        $user->update($request->except('password'));
+        $user->update($request->except(['password', 'image']));
 
-        return response()->json(['message' => 'Profile updated successfully', 'user' => $user]);
-    }
+        if ($request->hasFile('image')) {
+            if ($user->profilePicture) {
+                $user->profilePicture->delete();
+            }
 
-    public function updateUserPicture(Request $request)
-    {
-        $request->validate([
-            'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048'
-        ]);
+            $path = $request->file('image')->store('profile_pictures', 'public');
 
-        $user = Auth::user();
-
-        if ($user->profilePicture) {
-            $user->profilePicture->delete();
+            $asset = Asset::create([
+                'user_id'       => $user->id,
+                'assetable_id'  => $user->id,
+                'assetable_type' => User::class,
+                'type'          => 'image',
+                'path'          => $path
+            ]);
         }
 
-        $path = $request->file('image')->store('profile_pictures', 'public');
-
-        $asset = Asset::create([
-            'user_id' => $user->id,
-            'assetable_id' => $user->id,
-            'assetable_type' => User::class,
-            'type' => 'image',
-            'path' => $path
+        return response()->json([
+            'message' => 'Profile updated successfully',
+            'user'    => $user,
+            'asset'   => $asset ?? null
         ]);
-
-        return response()->json(['message' => 'Profile picture updated', 'asset' => $asset]);
     }
 
     public function addComment(Request $request)
@@ -116,5 +112,16 @@ class UserController extends Controller
         ]);
 
         return response()->json(['message' => 'Post saved', 'bookmark' => $bookmark]);
+    }
+
+    public function UserBookmarks($postId)
+    {
+        $user = Auth::user();
+
+        $bookmarks = $user->Interaction()->get();
+
+        $bookmarks = $bookmarks->map(fn($like) => $like->$postId);
+
+        return $bookmarks;
     }
 }
