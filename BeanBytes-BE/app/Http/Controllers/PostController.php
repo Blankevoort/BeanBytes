@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Post;
 use App\Models\Tag;
+use App\Models\Post;
 use App\Models\Asset;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -18,7 +19,7 @@ class PostController extends Controller
             'user:id,username',
             'comments',
             'shares',
-            'interactions'        
+            'interactions'
         ])->get()->map(function ($post) use ($user) {
             return [
                 'id' => $post->id,
@@ -32,10 +33,10 @@ class PostController extends Controller
                 'comments_count' => $post->comments->count(),
                 'shares_count' => $post->shares->count(),
                 'likes_count' => $post->interactions->where('type', 'like')->count(),
-                'isBookmarked' => $post->interactions
-                    ->where('type', 'bookmark')
+                'isBookmarked' => $user ? $post->interactions()
                     ->where('user_id', $user->id)
-                    ->isNotEmpty(), // Check if the authenticated user bookmarked the post
+                    ->where('type', 'bookmark')
+                    ->exists() : false,
             ];
         });
 
@@ -48,7 +49,9 @@ class PostController extends Controller
             'content' => 'required|string',
             'visibility' => 'required|in:public,private,friends',
             'tags' => 'nullable|array',
-            'tags.*' => 'string'
+            'tags.*' => 'string',
+            'assets' => 'nullable|array',
+            'assets.*' => 'file|mimes:jpeg,png,jpg,gif,mp4,mov,avi|max:10240',
         ]);
 
         $post = Post::create([
@@ -60,10 +63,29 @@ class PostController extends Controller
         if ($request->has('tags')) {
             $tagIds = [];
             foreach ($request->tags as $tagName) {
-                $tag = Tag::firstOrCreate(['name' => $tagName]);
+                $tag = Tag::firstOrCreate(
+                    ['name' => $tagName],
+                    ['slug' => Str::slug($tagName)]
+                );
                 $tagIds[] = $tag->id;
             }
             $post->tags()->sync($tagIds);
+        }
+
+        if ($request->hasFile('assets')) {
+            foreach ($request->file('assets') as $file) {
+                $fileType = $file->getMimeType();
+                $type = str_contains($fileType, 'image') ? 'image' : 'video';
+                $path = $file->store('post_assets', 'public');
+
+                Asset::create([
+                    'user_id' => Auth::id(),
+                    'assetable_id' => $post->id,
+                    'assetable_type' => Post::class,
+                    'type' => $type,
+                    'path' => $path
+                ]);
+            }
         }
 
         return response()->json(['message' => 'Post created', 'post' => $post]);
@@ -71,47 +93,42 @@ class PostController extends Controller
 
     public function editPost(Request $request, Post $post)
     {
-        $this->authorize('update', $post);
+        if (Auth::id() !== $post->user_id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
 
         $request->validate([
             'content' => 'nullable|string',
             'visibility' => 'nullable|in:public,private,friends',
+            'tags' => 'nullable|array',
+            'tags.*' => 'string',
         ]);
 
         $post->update($request->only(['content', 'visibility']));
+
+        if ($request->has('tags')) {
+            $tagIds = [];
+            foreach ($request->tags as $tagName) {
+                $tag = Tag::firstOrCreate(
+                    ['name' => $tagName],
+                    ['slug' => Str::slug($tagName)]
+                );
+                $tagIds[] = $tag->id;
+            }
+            $post->tags()->sync($tagIds);
+        }
 
         return response()->json(['message' => 'Post updated', 'post' => $post]);
     }
 
     public function deletePost(Post $post)
     {
-        $this->authorize('delete', $post);
+        if (Auth::id() !== $post->user_id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
 
         $post->delete();
 
         return response()->json(['message' => 'Post deleted']);
-    }
-
-    public function uploadAsset(Request $request, Post $post)
-    {
-        $this->authorize('update', $post);
-
-        $request->validate([
-            'file' => 'required|file|mimes:jpeg,png,jpg,gif,mp4,mov,avi|max:10240',
-        ]);
-
-        $fileType = $request->file->getMimeType();
-        $type = str_contains($fileType, 'image') ? 'image' : 'video';
-        $path = $request->file->store('post_assets', 'public');
-
-        $asset = Asset::create([
-            'user_id' => Auth::id(),
-            'assetable_id' => $post->id,
-            'assetable_type' => Post::class,
-            'type' => $type,
-            'path' => $path
-        ]);
-
-        return response()->json(['message' => 'Asset uploaded', 'asset' => $asset]);
     }
 }

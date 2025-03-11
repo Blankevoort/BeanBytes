@@ -19,8 +19,8 @@ Route::middleware('auth:sanctum')->group(function () {
         return $request->user();
     });
 
-    Route::post('/profile/update', [UserController::class, 'updateProfile']);
-    Route::post('/profile/picture', [UserController::class, 'updateProfilePicture']);
+    Route::post('/user/update', [UserController::class, 'updateProfile']);
+    Route::post('/user/picture', [UserController::class, 'updateProfilePicture']);
     Route::post('/add-post/comment', [UserController::class, 'addComment']);
     Route::post('/add-post/share', [UserController::class, 'sharePost']);
     Route::post('/add-post/save', [UserController::class, 'savePost']);
@@ -28,5 +28,4 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/add-post', [PostController::class, 'createPost']);
     Route::put('/edit-post/{post}', [PostController::class, 'editPost']);
     Route::delete('/delete-post/{post}', [PostController::class, 'deletePost']);
-    Route::post('/add-post/{post}/asset', [PostController::class, 'uploadAsset']);
 });

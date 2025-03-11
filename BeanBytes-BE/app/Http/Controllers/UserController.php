@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
-    public function updateProfile(Request $request)
+    public function updateUser(Request $request)
     {
         $user = Auth::user();
 
@@ -33,7 +33,7 @@ class UserController extends Controller
         return response()->json(['message' => 'Profile updated successfully', 'user' => $user]);
     }
 
-    public function updateProfilePicture(Request $request)
+    public function updateUserPicture(Request $request)
     {
         $request->validate([
             'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048'

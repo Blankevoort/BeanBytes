@@ -9,16 +9,10 @@ return new class extends Migration {
     {
         Schema::create('interactions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->morphs('interactionable');
-            $table->enum('type', ['like', 'bookmark']);
+            $table->string('type');
             $table->timestamps();
-
-            $table->unique(
-                ['user_id', 'interactionable_id', 'interactionable_type', 'type'],
-                'interaction_unique'
-            );
-
         });
     }
 
