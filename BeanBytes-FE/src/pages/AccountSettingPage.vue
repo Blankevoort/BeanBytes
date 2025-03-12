@@ -58,7 +58,7 @@ function updateUser() {
       jobTitle: jobTitle.value,
     })
     .then(() => {
-      window.reload()
+      window.location.reload();
     })
     .catch((err) => {
       handleApiError(err)

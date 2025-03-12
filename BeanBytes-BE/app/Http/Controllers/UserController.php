@@ -100,8 +100,15 @@ class UserController extends Controller
         $user = Auth::user();
         $postId = $request->post_id;
 
-        if (Interaction::where('user_id', $user->id)->where('interactionable_id', $postId)->where('interactionable_type', 'post')->exists()) {
-            return response()->json(['message' => 'Post already saved'], 409);
+        $existingBookmark = Interaction::where('user_id', $user->id)
+            ->where('interactionable_id', $postId)
+            ->where('interactionable_type', 'post')
+            ->where('type', 'bookmark')
+            ->first();
+
+        if ($existingBookmark) {
+            $existingBookmark->delete();
+            return response()->json(['message' => 'Post unsaved']);
         }
 
         $bookmark = Interaction::create([
@@ -114,14 +121,30 @@ class UserController extends Controller
         return response()->json(['message' => 'Post saved', 'bookmark' => $bookmark]);
     }
 
-    public function UserBookmarks($postId)
+    public function UserBookmarks()
     {
         $user = Auth::user();
 
-        $bookmarks = $user->Interaction()->get();
+        $bookmarkedPosts = Interaction::where('user_id', $user->id)
+            ->where('interactionable_type', 'post')
+            ->where('type', 'bookmark')
+            ->with(['interactionable.user:id,username', 'interactionable.comments', 'interactionable.shares', 'interactionable.interactions'])
+            ->get()
+            ->map(fn($interaction) => [
+                'id' => $interaction->interactionable->id,
+                'content' => $interaction->interactionable->content,
+                'visibility' => $interaction->interactionable->visibility,
+                'created_at' => $interaction->interactionable->created_at,
+                'user' => [
+                    'id' => $interaction->interactionable->user->id,
+                    'username' => $interaction->interactionable->user->username,
+                ],
+                'comments_count' => $interaction->interactionable->comments->count(),
+                'shares_count' => $interaction->interactionable->shares->count(),
+                'likes_count' => $interaction->interactionable->interactions->where('type', 'like')->count(),
+                'isBookmarked' => true,
+            ]);
 
-        $bookmarks = $bookmarks->map(fn($like) => $like->$postId);
-
-        return $bookmarks;
+        return response()->json($bookmarkedPosts);
     }
 }

@@ -1,7 +1,7 @@
 <template>
   <div class="sidebar-container">
     <div class="left-sidebar">
-      <div class="q-px-lg flex items-center " style="height: 55px">
+      <div class="q-px-lg flex items-center" style="height: 55px">
         <q-avatar>
           <img src="https://cdn.quasar.dev/logo-v2/svg/logo-mono-white.svg" />
         </q-avatar>
@@ -13,7 +13,7 @@
         <q-list class="q-px-md">
           <q-item clickable v-ripple to="/">
             <q-item-section avatar><q-icon name="home" /></q-item-section>
-            <q-item-section>My Feed</q-item-section>
+            <q-item-section>Feed</q-item-section>
           </q-item>
 
           <q-item clickable disable v-ripple to="/groups">
@@ -30,7 +30,7 @@
             </div>
           </q-item>
 
-          <q-item clickable v-ripple to="/bookmarks">
+          <q-item clickable v-ripple @click="handleBookmarksClick">
             <q-item-section avatar><q-icon name="bookmark" /></q-item-section>
             <q-item-section>Bookmarks</q-item-section>
           </q-item>
@@ -46,7 +46,7 @@
             </div>
           </q-item>
 
-          <q-item clickable v-ripple to="/settings/account">
+          <q-item clickable v-ripple @click="handleSettingsClick">
             <q-item-section avatar><q-icon name="settings" /></q-item-section>
             <q-item-section>Settings</q-item-section>
           </q-item>
@@ -55,9 +55,9 @@
 
           <q-item clickable v-ripple>
             <q-item-section avatar>
-              <q-avatar><img src="profile.jpg" /></q-avatar>
+              <q-avatar> <img :src="user?.avatar || 'profile.jpg'" /></q-avatar>
             </q-item-section>
-            <q-item-section>Robert J.</q-item-section>
+            <q-item-section>{{ user?.fullname || 'Guest' }}</q-item-section>
           </q-item>
         </q-list>
       </div>
@@ -67,7 +67,7 @@
 
         <div class="row justify-between items-center">
           Dark Theme
-          <q-toggle v-model="darkMode" />
+          <q-toggle v-model="darkMode" @update:model-value="toggleDarkMode" />
         </div>
       </div>
     </div>
@@ -75,9 +75,50 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { useQuasar } from 'quasar'
+import { useRouter } from 'vue-router'
+import { api } from 'src/boot/axios'
 
-const darkMode = ref(true)
+const $q = useQuasar()
+const router = useRouter()
+
+const darkMode = ref(localStorage.getItem('darkMode') === 'true')
+$q.dark.set(darkMode.value)
+
+const toggleDarkMode = () => {
+  $q.dark.set(darkMode.value)
+  localStorage.setItem('darkMode', darkMode.value)
+}
+
+const handleBookmarksClick = () => {
+  if (!user.value) {
+    router.push('/settings/account')
+  } else {
+    router.push('/bookmarks')
+  }
+}
+
+const handleSettingsClick = () => {
+  if (!user.value) {
+    router.push('/account')
+  } else {
+    router.push('/settings/account')
+  }
+}
+
+const user = ref(null)
+
+const fetchUser = async () => {
+  try {
+    const { data } = await api.get('/api/user')
+    user.value = data
+  } catch (error) {
+    console.error('Error fetching user:', error)
+  }
+}
+
+onMounted(fetchUser)
 </script>
 
 <style>

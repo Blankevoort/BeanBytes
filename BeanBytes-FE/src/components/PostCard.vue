@@ -16,7 +16,7 @@
       </div>
 
       <q-icon
-        :name="post.saved ? 'sym_o_bookmark' : 'bookmark'"
+        :name="post.isBookmarked ? 'bookmark' : 'sym_o_bookmark'"
         size="24px"
         class="cursor-pointer"
         @click="savePost(post.id)"
@@ -66,15 +66,15 @@
       </div>
 
       <div class="row q-gutter-x-md">
-        <div class="post-actionButtons">
+        <div class="cursor-pointer">
           <q-icon name="thumb_up" size="16px" /> {{ post.likes_count }}
         </div>
 
-        <div class="post-actionButtons">
+        <div class="cursor-pointer">
           <q-icon name="chat" size="16px" /> {{ post.comments_count }}
         </div>
 
-        <div class="post-actionButtons">
+        <div class="cursor-pointer">
           <q-icon name="share" size="16px" /> {{ post.shares_count }}
         </div>
       </div>
@@ -97,8 +97,9 @@ function savePost(postId) {
   postData.append('post_id', postId)
 
   api
-    .post('/api/post/add-save', postData)
+    .post('/api/post/save', postData)
     .then((response) => {
+      window.location.reload()
       console.log('Post saved successfully:', response.data)
     })
     .catch((error) => {

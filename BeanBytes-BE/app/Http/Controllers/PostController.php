@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Tag;
 use App\Models\Post;
 use App\Models\Asset;
+use App\Models\Interaction;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -13,7 +14,7 @@ class PostController extends Controller
 {
     public function getAllPosts(Request $request)
     {
-        $user = Auth::user();
+        $user = Auth::check() ? Auth::user() : null;
 
         $posts = Post::with([
             'user:id,username',
@@ -33,10 +34,11 @@ class PostController extends Controller
                 'comments_count' => $post->comments->count(),
                 'shares_count' => $post->shares->count(),
                 'likes_count' => $post->interactions->where('type', 'like')->count(),
-                'isBookmarked' => $user ? $post->interactions()
-                    ->where('user_id', $user->id)
+                'isBookmarked' => $user ? Interaction::where('user_id', $user->id)
+                    ->where('interactionable_id', $post->id)
+                    ->where('interactionable_type', 'post')
                     ->where('type', 'bookmark')
-                    ->exists() : false,
+                    ->exists() : false, // Guest users see `false`
             ];
         });
 
