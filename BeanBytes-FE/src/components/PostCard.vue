@@ -23,7 +23,9 @@
       />
     </div>
 
-    <p>{{ post.content }}</p>
+    <p>{{ cleanedContent }}</p>
+
+    <!-- Scrollable Code Snippet -->
 
     <div v-if="post.fullCode" class="q-py-md">
       <q-card class="bg-dark text-white">
@@ -39,31 +41,43 @@
 
         <q-separator dark />
 
-        <q-card-section>
-          <pre><code class="language-javascript">{{ post.fullCode }}</code></pre>
+        <!-- Shortened Code Preview -->
+
+        <q-card-section class="scrollable-x">
+          <pre><code class="language-javascript">{{ truncatedCode }}</code></pre>
         </q-card-section>
+
+        <!-- Expandable Full Code -->
+
+        <q-expansion-item expand-separator v-model="isExpanded" label="Show Full Code">
+          <q-card-section class="scrollable-x">
+            <pre><code class="language-javascript">{{ post.fullCode }}</code></pre>
+          </q-card-section>
+        </q-expansion-item>
       </q-card>
     </div>
 
-    <div v-if="post.assets" class="q-py-md">
-      <q-img
-        v-for="asset in post.assets"
-        :key="asset.id"
-        :src="asset.path"
-        style="max-height: 500px"
-      />
+    <!-- Image Assets -->
+
+    <div v-if="post.assets" class="q-py-md scrollable-x">
+      <q-img v-for="asset in post.assets" :key="asset.id" :src="asset.path" class="image-asset" />
     </div>
 
+    <!-- Post Tags -->
+
     <div class="q-pt-md q-gutter-y-sm">
-      <div
-        v-for="tag in post.tags"
-        :key="tag.id"
-        class="cursor-pointer"
-        style="padding-left: 15px"
-        @click="search(tag.name)"
-      >
-        #{{ tag.name }}
+      <div class="row q-gutter-x-sm">
+        <div
+          v-for="tag in post.tags"
+          :key="tag"
+          class="cursor-pointer text-secondary"
+          @click="search(tag)"
+        >
+          #{{ tag }}
+        </div>
       </div>
+
+      <!-- Post Actions -->
 
       <div class="row q-gutter-x-md">
         <div class="cursor-pointer">
@@ -83,29 +97,24 @@
 </template>
 
 <script setup>
-import { defineProps } from 'vue'
+import { computed, defineProps, ref } from 'vue'
 import { useQuasar } from 'quasar'
 import { api } from 'src/boot/axios'
 
 const $q = useQuasar()
-defineProps({
+const props = defineProps({
   post: Object,
 })
 
-function savePost(postId) {
-  const postData = new FormData()
-  postData.append('post_id', postId)
+const isExpanded = ref(false)
 
-  api
-    .post('/api/post/save', postData)
-    .then((response) => {
-      window.location.reload()
-      console.log('Post saved successfully:', response.data)
-    })
-    .catch((error) => {
-      console.error('Error saving post:', error.response.data)
-    })
-}
+const cleanedContent = computed(() => {
+  return props.post.content.replace(/#([\p{L}0-9_]+)/gu, '').trim()
+})
+
+const truncatedCode = computed(() => {
+  return props.post.fullCode.split('\n').slice(0, 4).join('\n') + '\n...'
+})
 
 function formatDate(date) {
   const now = new Date()
@@ -135,8 +144,47 @@ function formatDate(date) {
   return `${diffInYears} years ago`
 }
 
+function savePost(postId) {
+  const postData = new FormData()
+  postData.append('post_id', postId)
+
+  api
+    .post('/api/post/save', postData)
+    .then((response) => {
+      window.location.reload()
+      console.log('Post saved successfully:', response.data)
+    })
+    .catch((error) => {
+      console.error('Error saving post:', error.response.data)
+    })
+}
+
 function copyCode(code) {
   navigator.clipboard.writeText(code)
   $q.notify({ message: 'Copied to clipboard!', color: 'green' })
 }
 </script>
+
+<style scoped>
+.scrollable-x {
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+pre {
+  margin: 0;
+  padding: 8px;
+  font-size: 14px;
+  overflow-x: auto;
+  background: #1e1e1e;
+  color: #fff;
+  border-radius: 4px;
+}
+
+.image-asset {
+  max-height: 500px;
+  max-width: 100%;
+  display: inline-block;
+  margin-right: 10px;
+}
+</style>
