@@ -1,8 +1,6 @@
 <template>
-  <div
-    class="q-pa-md q-ml-sm q-my-md"
-    style="border: 2px solid grey; border-radius: 4px; margin-right: 12px"
-  >
+  <div class="q-pa-md q-ml-sm q-my-md post-container">
+    <!-- User Info -->
     <div class="row justify-between">
       <div class="cursor-pointer row q-gutter-x-md">
         <q-avatar size="32px">
@@ -11,7 +9,7 @@
 
         <div>
           <p>{{ post.user.username }}</p>
-          <p style="font-size: 12px">{{ formatDate(post.created_at) }}</p>
+          <p class="time-text">{{ formatDate(post.created_at) }}</p>
         </div>
       </div>
 
@@ -23,9 +21,11 @@
       />
     </div>
 
+    <!-- Post Content -->
+
     <p>{{ cleanedContent }}</p>
 
-    <!-- Scrollable Code Snippet -->
+    <!-- Code Snippet -->
 
     <div v-if="post.fullCode" class="q-py-md">
       <q-card class="bg-dark text-white">
@@ -41,29 +41,29 @@
 
         <q-separator dark />
 
-        <!-- Shortened Code Preview -->
-
-        <q-card-section class="scrollable-x">
+        <q-card-section>
           <pre><code class="language-javascript">{{ truncatedCode }}</code></pre>
         </q-card-section>
 
-        <!-- Expandable Full Code -->
-
         <q-expansion-item expand-separator v-model="isExpanded" label="Show Full Code">
-          <q-card-section class="scrollable-x">
+          <q-card-section>
             <pre><code class="language-javascript">{{ post.fullCode }}</code></pre>
           </q-card-section>
         </q-expansion-item>
       </q-card>
     </div>
 
-    <!-- Image Assets -->
-
-    <div v-if="post.assets" class="q-py-md scrollable-x">
-      <q-img v-for="asset in post.assets" :key="asset.id" :src="asset.path" class="image-asset" />
+    <div v-if="post.assets.length" class="q-py-md image-grid">
+      <img
+        v-for="asset in fixedAssets"
+        :key="asset.id"
+        :src="asset.url"
+        class="image-item cursor-pointer"
+        @click="openImage(asset.url)"
+      />
     </div>
 
-    <!-- Post Tags -->
+    <!-- Tags -->
 
     <div class="q-pt-md q-gutter-y-sm">
       <div class="row q-gutter-x-sm">
@@ -93,20 +93,40 @@
         </div>
       </div>
     </div>
+
+    <q-dialog v-model="imageDialog">
+      <img :src="selectedImage" class="full-image" />
+    </q-dialog>
   </div>
 </template>
 
 <script setup>
-import { computed, defineProps, ref } from 'vue'
+import { computed, defineProps, ref, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
+import 'highlight.js/styles/github-dark.min.css'
+import hljs from 'highlight.js'
+
 import { api } from 'src/boot/axios'
 
 const $q = useQuasar()
+const imageDialog = ref(false)
+const selectedImage = ref('')
+const isExpanded = ref(false)
+
 const props = defineProps({
   post: Object,
 })
 
-const isExpanded = ref(false)
+const fixedAssets = computed(() => {
+  return props.post.assets.map((asset) => {
+    const fixedUrl = 'http://127.0.0.1:8000/storage/' + asset.url.replace(/\\/g, '/')
+
+    return {
+      ...asset,
+      url: fixedUrl,
+    }
+  })
+})
 
 const cleanedContent = computed(() => {
   return props.post.content.replace(/#([\p{L}0-9_]+)/gu, '').trim()
@@ -163,28 +183,50 @@ function copyCode(code) {
   navigator.clipboard.writeText(code)
   $q.notify({ message: 'Copied to clipboard!', color: 'green' })
 }
+
+function openImage(url) {
+  selectedImage.value = url
+  console.log(selectedImage.value)
+  imageDialog.value = true
+}
+
+onMounted(() => {
+  hljs.highlightAll()
+})
 </script>
 
 <style scoped>
-.scrollable-x {
-  overflow-x: auto;
-  white-space: nowrap;
-}
-
-pre {
-  margin: 0;
-  padding: 8px;
-  font-size: 14px;
-  overflow-x: auto;
-  background: #1e1e1e;
-  color: #fff;
+.post-container {
+  border: 2px solid grey;
   border-radius: 4px;
+  padding: 16px;
+  margin-right: 12px;
 }
 
-.image-asset {
-  max-height: 500px;
+.time-text {
+  font-size: 12px;
+}
+
+.image-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.image-item {
+  max-height: 300px;
+  width: auto;
   max-width: 100%;
-  display: inline-block;
-  margin-right: 10px;
+  border-radius: 6px;
+  transition: transform 0.2s ease-in-out;
+}
+
+.image-item:hover {
+  transform: scale(1.05);
+}
+
+.full-image {
+  max-width: 90vw;
+  max-height: 90vh;
 }
 </style>

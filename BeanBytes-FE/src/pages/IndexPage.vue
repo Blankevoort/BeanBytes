@@ -11,12 +11,8 @@
 
           <div class="post-actions">
             <div class="action-left">
-              <button class="icon-btn">
-                <q-icon name="code" size="24px" color="grey-6" />
-              </button>
-
-              <button class="icon-btn">
-                <q-icon name="photo_camera" size="24px" color="grey-6" />
+              <button type="button" class="icon-btn" @click="showDialog = true">
+                <q-icon name="sym_o_image" size="24px" color="grey-6" />
               </button>
             </div>
 
@@ -67,6 +63,46 @@
         <div v-else>No posts found.</div>
       </div>
     </div>
+
+    <q-dialog v-model="showDialog">
+      <q-card style="width: 400px">
+        <q-card-section class="row items-center justify-between">
+          <div class="text-h6">Upload Image</div>
+          <q-btn icon="close" flat round dense v-close-popup />
+        </q-card-section>
+
+        <q-separator />
+
+        <!-- File Input -->
+        <q-card-section>
+          <q-file
+            v-model="imageFile"
+            label="Choose an image"
+            accept="image/*"
+            filled
+            @update:model-value="previewImage"
+          />
+
+          <!-- Image Preview -->
+          <div v-if="imagePreview" class="q-mt-md">
+            <q-img :src="imagePreview" style="max-height: 200px; max-width: 100%" />
+          </div>
+        </q-card-section>
+
+        <q-separator />
+
+        <!-- Upload Button -->
+        <q-card-actions align="right">
+          <q-btn label="Cancel" flat v-close-popup />
+          <q-btn
+            label="Upload"
+            color="primary"
+            @click="addPost"
+            :disable="!content && !imageFile"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -74,10 +110,15 @@
 import { onMounted, ref } from 'vue'
 import { api } from 'src/boot/axios'
 import PostCard from 'src/components/PostCard.vue'
+import { useQuasar } from 'quasar'
 
 const postsTabs = ref('following')
 const content = ref()
 const posts = ref([])
+const $q = useQuasar
+const showDialog = ref(false)
+const imageFile = ref(null)
+const imagePreview = ref(null)
 
 async function fetchPosts() {
   try {
@@ -88,18 +129,43 @@ async function fetchPosts() {
   }
 }
 
-function addPost() {
-  const postData = new FormData()
-  postData.append('content', content.value)
+async function addPost() {
+  if (!content.value) return
 
-  api
-    .post('/api/add-post', postData)
-    .then((response) => {
-      console.log('Post created successfully:', response.data)
-    })
-    .catch((error) => {
-      console.error('Error creating post:', error.response.data)
-    })
+  const postData = new FormData()
+  postData.append('content', content.value || '')
+
+  if (imageFile.value) {
+    postData.append('assets[]', imageFile.value)
+  }
+
+  try {
+    const response = await api
+      .post('/api/add-post', postData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      .then(() => {
+        content.value = ''
+        imageFile.value = null
+        imagePreview.value = null
+        showDialog.value = false
+      })
+    console.log('Post created successfully:', response.data)
+    $q.notify({ message: 'Post created successfully!', color: 'green' })
+  } catch (error) {
+    console.error('Error creating post:', error.response?.data || error)
+    $q.notify({ message: 'Failed to create post', color: 'red' })
+  }
+}
+
+function previewImage(file) {
+  if (file) {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      imagePreview.value = e.target.result
+    }
+    reader.readAsDataURL(file)
+  }
 }
 
 onMounted(fetchPosts)

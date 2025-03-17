@@ -14,6 +14,8 @@ class Post extends Model
         'user_id', 'content', 'fullCode', 'visibility'
     ];
 
+    protected $with = ['assets'];
+
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -36,7 +38,7 @@ class Post extends Model
 
     public function assets()
     {
-        return $this->morphMany(Asset::class, 'assetable');
+        return $this->morphMany(Asset::class, 'assetable', 'assetable_type', 'assetable_id', 'id');
     }
 
     public function interactions()

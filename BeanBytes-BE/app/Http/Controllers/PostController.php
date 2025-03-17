@@ -8,6 +8,7 @@ use App\Models\Asset;
 use App\Models\Interaction;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 
 class PostController extends Controller
@@ -22,6 +23,7 @@ class PostController extends Controller
             'shares',
             'interactions',
             'tags:id,name',
+            'assets'
         ])->get()->map(function ($post) use ($user) {
             return [
                 'id' => $post->id,
@@ -42,6 +44,13 @@ class PostController extends Controller
                     ->where('interactionable_type', 'post')
                     ->where('type', 'bookmark')
                     ->exists() : false,
+                'assets' => $post->assets->map(function ($asset) {
+                    return [
+                        'id' => $asset->id,
+                        'type' => $asset->type,
+                        'url' => $asset->getRawOriginal('path'), 
+                    ];
+                })->values(),
             ];
         });
 
@@ -92,18 +101,22 @@ class PostController extends Controller
         }
 
         if ($request->hasFile('assets')) {
-            foreach ($request->file('assets') as $file) {
-                $fileType = $file->getMimeType();
-                $type = str_contains($fileType, 'image') ? 'image' : 'video';
-                $path = $file->store('post_assets', 'public');
+            $files = is_array($request->file('assets')) ? $request->file('assets') : [$request->file('assets')];
 
-                Asset::create([
-                    'user_id' => Auth::id(),
-                    'assetable_id' => $post->id,
-                    'assetable_type' => Post::class,
-                    'type' => $type,
-                    'path' => $path
-                ]);
+            foreach ($files as $file) {
+                if ($file) {
+                    $fileType = $file->getMimeType();
+                    $type = str_contains($fileType, 'image') ? 'image' : 'video';
+                    $path = $file->store('post_assets', 'public');
+
+                    Asset::create([
+                        'user_id' => Auth::id(),
+                        'assetable_id' => $post->id,
+                        'assetable_type' => Post::class,
+                        'type' => $type,
+                        'path' => $path
+                    ]);
+                }
             }
         }
 
