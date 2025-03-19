@@ -9,7 +9,13 @@ class Interaction extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['user_id', 'interactionable_id', 'interactionable_type', 'type'];
+    protected $fillable = [
+        'user_id',
+        'interactionable_id',
+        'interactionable_type',
+        'type',
+        'shared_post_id',
+    ];
 
     public function user()
     {
@@ -19,5 +25,10 @@ class Interaction extends Model
     public function interactionable()
     {
         return $this->morphTo();
+    }
+
+    public function sharedPost()
+    {
+        return $this->belongsTo(Post::class, 'shared_post_id');
     }
 }

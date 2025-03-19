@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Post;
 use App\Models\User;
-use App\Models\Comment;
-use App\Models\Share;
-use App\Models\Interaction;
 use App\Models\Asset;
+use App\Models\Share;
+use App\Models\Comment;
+use App\Models\Interaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -54,6 +55,45 @@ class UserController extends Controller
         ]);
     }
 
+    public function addLike(Request $request)
+    {
+        $user = auth()->user();
+        $post = Post::find($request->post_id);
+
+        if (!$post) {
+            return response()->json(['message' => 'Post not found'], 404);
+        }
+
+        $existingLike = Interaction::where('user_id', $user->id)
+            ->where('interactionable_id', $post->id)
+            ->where('interactionable_type', Post::class)
+            ->where('type', 'like')
+            ->first();
+
+        if ($existingLike) {
+            $existingLike->delete();
+            $message = 'Post Like Removed';
+        } else {
+            Interaction::create([
+                'user_id' => $user->id,
+                'interactionable_id' => $post->id,
+                'interactionable_type' => Post::class,
+                'type' => 'like',
+            ]);
+            $message = 'Post liked';
+        }
+
+        $likesCount = Interaction::where('interactionable_id', $post->id)
+            ->where('interactionable_type', Post::class)
+            ->where('type', 'like')
+            ->count();
+
+        return response()->json([
+            'message' => $message,
+            'likes_count' => $likesCount,
+        ]);
+    }
+
     public function addComment(Request $request)
     {
         $request->validate([
@@ -79,16 +119,27 @@ class UserController extends Controller
         $user = Auth::user();
         $postId = $request->post_id;
 
-        if (Share::where('user_id', $user->id)->where('post_id', $postId)->exists()) {
+        if (
+            Interaction::where('user_id', $user->id)
+            ->where('interactionable_id', $postId)
+            ->where('interactionable_type', Post::class)
+            ->where('type', 'share')
+            ->exists()
+        ) {
             return response()->json(['message' => 'You have already shared this post'], 409);
         }
 
-        $share = Share::create([
+        $share = Interaction::create([
             'user_id' => $user->id,
-            'post_id' => $postId,
+            'interactionable_id' => $postId,
+            'interactionable_type' => Post::class,
+            'type' => 'share',
         ]);
 
-        return response()->json(['message' => 'Post shared', 'share' => $share]);
+        return response()->json([
+            'message' => 'Post shared',
+            'share' => $share,
+        ]);
     }
 
     public function savePost(Request $request)

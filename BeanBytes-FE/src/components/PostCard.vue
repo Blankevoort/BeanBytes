@@ -23,7 +23,7 @@
 
     <!-- Post Content -->
 
-    <p>{{ cleanedContent }}</p>
+    <p v-html="cleanedContent"></p>
 
     <!-- Code Snippet -->
 
@@ -53,6 +53,8 @@
       </q-card>
     </div>
 
+    <!-- Images -->
+
     <div v-if="post.assets.length" class="q-py-md image-grid">
       <img
         v-for="asset in fixedAssets"
@@ -80,28 +82,106 @@
       <!-- Post Actions -->
 
       <div class="row q-gutter-x-md">
-        <div class="cursor-pointer">
-          <q-icon name="thumb_up" size="16px" /> {{ post.likes_count }}
+        <div class="cursor-pointer" @click="toggleLike(post.id)">
+          <q-icon :name="localPost.isLiked ? 'thumb_up' : 'sym_o_thumb_up'" size="16px" />
+          {{ localPost.likes_count }}
         </div>
 
-        <div class="cursor-pointer">
-          <q-icon name="chat" size="16px" /> {{ post.comments_count }}
+        <div class="cursor-pointer" @click="openCommentDialog">
+          <q-icon name="chat" size="16px" />
+          {{ localPost.comments_count }}
         </div>
 
-        <div class="cursor-pointer">
-          <q-icon name="share" size="16px" /> {{ post.shares_count }}
+        <div class="cursor-pointer" @click="sharePost(post.id)">
+          <q-icon :name="localPost.isShared ? 'share' : 'sym_o_share'" size="16px" />
+          {{ localPost.shares_count }}
         </div>
+      </div>
+
+      <div v-if="showCommentInput" class="q-mt-sm row q-gutter-x-sm">
+        <q-input
+          v-model="newComment"
+          filled
+          dense
+          placeholder="Write a comment..."
+          class="col-grow"
+        />
+
+        <q-btn label="Send" color="primary" @click="addComment(post.id)" />
       </div>
     </div>
 
     <q-dialog v-model="imageDialog">
       <img :src="selectedImage" class="full-image" />
     </q-dialog>
+
+    <q-dialog v-model="shareDialog">
+      <q-card class="q-pa-md">
+        <q-card-section>
+          <div class="text-h6">Share Post</div>
+        </q-card-section>
+
+        <q-card-section>
+          <q-input v-model="postShareLink" readonly>
+            <template v-slot:append>
+              <q-btn icon="content_copy" flat @click="copyPostLink" />
+            </template>
+          </q-input>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn label="Close" color="primary" v-close-popup />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <q-dialog v-model="commentDialog">
+      <q-card class="q-pa-md comment-dialog" style="width: 500px">
+        <q-card-section>
+          <div class="text-h6">Comments</div>
+        </q-card-section>
+
+        <q-card-section class="row q-gutter-x-sm">
+          <q-input
+            v-model="newComment"
+            filled
+            dense
+            placeholder="Write a comment..."
+            class="col-grow"
+          />
+          <q-btn label="Send" color="primary" @click="addComment(post.id)" />
+        </q-card-section>
+
+        <q-separator />
+
+        <q-card-section class="comments-list">
+          <q-list v-if="comments.length">
+            <q-item v-for="comment in comments" :key="comment.id">
+              <q-item-section avatar>
+                <q-avatar size="24px">
+                  <img :src="comment.user.profile_picture || 'default-profile.jpg'" />
+                </q-avatar>
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>{{ comment.user.username }}</q-item-label>
+                <q-item-label caption>{{ comment.content }}</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+
+          <div v-else class="text-center text-grey q-mt-md">No comments yet.</div>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn label="Close" color="primary" v-close-popup />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </div>
 </template>
 
 <script setup>
-import { computed, defineProps, ref, onMounted } from 'vue'
+import { computed, defineProps, ref, onMounted, reactive } from 'vue'
 import { useQuasar } from 'quasar'
 import 'highlight.js/styles/github-dark.min.css'
 import hljs from 'highlight.js'
@@ -112,6 +192,12 @@ const $q = useQuasar()
 const imageDialog = ref(false)
 const selectedImage = ref('')
 const isExpanded = ref(false)
+const showCommentInput = ref(false)
+const newComment = ref('')
+const shareDialog = ref(false)
+const postShareLink = ref('')
+const commentDialog = ref(false)
+const comments = ref([])
 
 const props = defineProps({
   post: Object,
@@ -120,20 +206,23 @@ const props = defineProps({
 const fixedAssets = computed(() => {
   return props.post.assets.map((asset) => {
     const fixedUrl = 'http://127.0.0.1:8000/storage/' + asset.url.replace(/\\/g, '/')
-
-    return {
-      ...asset,
-      url: fixedUrl,
-    }
+    return { ...asset, url: fixedUrl }
   })
 })
 
 const cleanedContent = computed(() => {
-  return props.post.content.replace(/#([\p{L}0-9_]+)/gu, '').trim()
+  return props.post.content
+    .replace(/(\r\n|\r|\n)/g, '<br>')
+    .replace(/#([\p{L}0-9_]+)/gu, '')
+    .trim()
 })
 
 const truncatedCode = computed(() => {
   return props.post.fullCode.split('\n').slice(0, 4).join('\n') + '\n...'
+})
+
+const localPost = reactive({
+  ...props.post,
 })
 
 function formatDate(date) {
@@ -141,42 +230,58 @@ function formatDate(date) {
   const past = new Date(date)
 
   const diffInSeconds = Math.floor((now.getTime() - past.getTime()) / 1000)
-
-  if (diffInSeconds < 0) {
-    return 'Just now'
-  }
-
   if (diffInSeconds < 60) return `${diffInSeconds} seconds ago`
-
   const diffInMinutes = Math.floor(diffInSeconds / 60)
   if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`
-
   const diffInHours = Math.floor(diffInMinutes / 60)
   if (diffInHours < 24) return `${diffInHours} hours ago`
-
   const diffInDays = Math.floor(diffInHours / 24)
-  if (diffInDays < 30) return `${diffInDays} days ago`
-
-  const diffInMonths = Math.floor(diffInDays / 30)
-  if (diffInMonths < 12) return `${diffInMonths} months ago`
-
-  const diffInYears = Math.floor(diffInMonths / 12)
-  return `${diffInYears} years ago`
+  return diffInDays < 30 ? `${diffInDays} days ago` : new Date(date).toLocaleDateString()
 }
 
-function savePost(postId) {
-  const postData = new FormData()
-  postData.append('post_id', postId)
+async function toggleLike(postId) {
+  try {
+    const response = await api.post('/api/add-post/like', { post_id: postId })
+    localPost.likes_count = response.data.likes_count
+    localPost.isLiked = !localPost.isLiked
 
-  api
-    .post('/api/post/save', postData)
-    .then((response) => {
-      window.location.reload()
-      console.log('Post saved successfully:', response.data)
+    $q.notify({
+      message: response.data.message,
+      color: response.data.message === 'Post liked' ? 'green' : 'red',
     })
-    .catch((error) => {
-      console.error('Error saving post:', error.response.data)
+  } catch (error) {
+    console.error('Error liking post:', error.response?.data || error.message)
+    $q.notify({ message: 'Failed to like the post!', color: 'red' })
+  }
+}
+
+async function sharePost(postId) {
+  if (localPost.isShared) {
+    postShareLink.value = `${window.location.origin}/post/${postId}`
+    shareDialog.value = true
+    return
+  }
+
+  try {
+    const response = await api.post('/api/add-post/share', { post_id: postId })
+
+    localPost.shares_count = response.data.shares_count
+    localPost.isShared = true
+
+    postShareLink.value = `${window.location.origin}/post/${postId}`
+    shareDialog.value = true
+
+    $q.notify({
+      message: response.data.message,
+      color: 'green',
     })
+  } catch (error) {
+    console.error('Error sharing post:', error.response?.data || error.message)
+    $q.notify({
+      message: 'Failed to share the post!',
+      color: 'red',
+    })
+  }
 }
 
 function copyCode(code) {
@@ -184,14 +289,67 @@ function copyCode(code) {
   $q.notify({ message: 'Copied to clipboard!', color: 'green' })
 }
 
+function copyPostLink() {
+  navigator.clipboard.writeText(postShareLink.value)
+  $q.notify({ message: 'Copied to clipboard!', color: 'green' })
+}
+
 function openImage(url) {
   selectedImage.value = url
-  console.log(selectedImage.value)
   imageDialog.value = true
 }
 
+const highlightCodeBlocks = () => {
+  document.querySelectorAll('pre code').forEach((block) => {
+    if (!block.dataset.highlighted) {
+      hljs.highlightElement(block)
+      block.dataset.highlighted = 'yes'
+    }
+  })
+}
+
+async function addComment(postId) {
+  if (!newComment.value.trim()) {
+    $q.notify({ message: 'Comment cannot be empty!', color: 'red' })
+    return
+  }
+
+  try {
+    const response = await api.post('/api/add-post/comment', {
+      post_id: postId,
+      content: newComment.value,
+    })
+
+    localPost.comments_count++
+    comments.value.unshift({
+      id: response.data.comment.id,
+      content: newComment.value,
+      user: response.data.comment.user,
+    })
+
+    newComment.value = ''
+
+    $q.notify({ message: 'Comment added successfully!', color: 'green' })
+  } catch (error) {
+    console.error('Error adding comment:', error.response?.data || error.message)
+    $q.notify({ message: 'Failed to add comment!', color: 'red' })
+  }
+}
+
+async function openCommentDialog() {
+  commentDialog.value = true
+
+  try {
+    const response = await api.get(`/api/get-post/comments?post_id=${props.post.id}`)
+    comments.value = response.data.comments
+  } catch (error) {
+    console.error('Error fetching comments:', error.response?.data || error.message)
+    $q.notify({ message: 'Failed to load comments!', color: 'red' })
+  }
+}
+
 onMounted(() => {
-  hljs.highlightAll()
+  highlightCodeBlocks()
 })
 </script>
 
@@ -228,5 +386,11 @@ onMounted(() => {
 .full-image {
   max-width: 90vw;
   max-height: 90vh;
+}
+
+.hashtag {
+  color: #1da1f2;
+  cursor: pointer;
+  font-weight: bold;
 }
 </style>

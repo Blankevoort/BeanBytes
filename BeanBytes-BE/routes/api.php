@@ -22,9 +22,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/user/bookmarks', [UserController::class, 'userBookmarks']);
     Route::put('/user/update', [UserController::class, 'updateUser']);
+    Route::post('/post/save', [UserController::class, 'savePost']);
+    Route::post('/add-post/like', [UserController::class, 'addLike']);
     Route::post('/add-post/comment', [UserController::class, 'addComment']);
     Route::post('/add-post/share', [UserController::class, 'sharePost']);
-    Route::post('/post/save', [UserController::class, 'savePost']);
+    Route::get('/get-post/comments', [PostController::class, 'getPostComments']);
 
     Route::post('/add-post', [PostController::class, 'createPost']);
     Route::put('/edit-post/{post}', [PostController::class, 'editPost']);

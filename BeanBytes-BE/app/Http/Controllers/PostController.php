@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Tag;
 use App\Models\Post;
 use App\Models\Asset;
+use App\Models\Comment;
 use App\Models\Interaction;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
@@ -19,40 +20,55 @@ class PostController extends Controller
 
         $posts = Post::with([
             'user:id,username',
-            'comments',
-            'shares',
-            'interactions',
             'tags:id,name',
             'assets'
-        ])->get()->map(function ($post) use ($user) {
-            return [
-                'id' => $post->id,
-                'content' => $post->content,
-                'fullCode' => $post->fullCode,
-                'visibility' => $post->visibility,
-                'created_at' => $post->created_at,
-                'user' => [
-                    'id' => $post->user->id,
-                    'username' => $post->user->username,
-                ],
-                'tags' => $post->tags->pluck('name'),
-                'comments_count' => $post->comments->count(),
-                'shares_count' => $post->shares->count(),
-                'likes_count' => $post->interactions->where('type', 'like')->count(),
-                'isBookmarked' => $user ? Interaction::where('user_id', $user->id)
-                    ->where('interactionable_id', $post->id)
-                    ->where('interactionable_type', 'post')
-                    ->where('type', 'bookmark')
-                    ->exists() : false,
-                'assets' => $post->assets->map(function ($asset) {
-                    return [
-                        'id' => $asset->id,
-                        'type' => $asset->type,
-                        'url' => $asset->getRawOriginal('path'), 
-                    ];
-                })->values(),
-            ];
-        });
+        ])
+            ->withCount('comments')
+            ->get()
+            ->map(function ($post) use ($user) {
+                return [
+                    'id' => $post->id,
+                    'content' => $post->content,
+                    'fullCode' => $post->fullCode,
+                    'visibility' => $post->visibility,
+                    'created_at' => $post->created_at,
+                    'user' => [
+                        'id' => $post->user->id,
+                        'username' => $post->user->username,
+                    ],
+                    'tags' => $post->tags->pluck('name'),
+                    'likes_count' => Interaction::where('interactionable_id', $post->id)
+                        ->where('interactionable_type', Post::class)
+                        ->where('type', 'like')
+                        ->count(),
+                    'comments_count' => $post->comments_count,
+                    'shares_count' => Interaction::where('interactionable_id', $post->id)
+                        ->where('interactionable_type', Post::class)
+                        ->where('type', 'share')
+                        ->count(),
+                    'isLiked' => $user ? Interaction::where('user_id', $user->id)
+                        ->where('interactionable_id', $post->id)
+                        ->where('interactionable_type', Post::class)
+                        ->where('type', 'like')
+                        ->exists() : false,
+                    'isShared' => $user ? Interaction::where('user_id', $user->id)
+                        ->where('interactionable_id', $post->id)
+                        ->where('interactionable_type', Post::class)
+                        ->where('type', 'share')
+                        ->exists() : false,
+                    'isBookmarked' => $user ? $post->interactions()
+                        ->where('user_id', $user->id)
+                        ->where('type', 'bookmark')
+                        ->exists() : false,
+                    'assets' => $post->assets->map(function ($asset) {
+                        return [
+                            'id' => $asset->id,
+                            'type' => $asset->type,
+                            'url' => $asset->getRawOriginal('path'),
+                        ];
+                    })->values(),
+                ];
+            });
 
         return response()->json($posts);
     }
@@ -77,7 +93,7 @@ class PostController extends Controller
         $hashtags = $matches[1] ?? [];
 
         $cleanedContent = preg_replace('/#([\p{L}0-9_]+)/u', '', $request->content);
-        $cleanedContent = trim(preg_replace('/\s+/', ' ', $cleanedContent));
+        $cleanedContent = nl2br(trim($cleanedContent));
 
         $allTags = array_unique(array_merge($hashtags, $request->tags ?? []));
 
@@ -171,5 +187,22 @@ class PostController extends Controller
     {
         $tags = Tag::inRandomOrder()->limit(8)->get(['name']);
         return response()->json($tags);
+    }
+
+    public function getPostComments(Request $request)
+    {
+        $request->validate([
+            'post_id' => 'required|exists:posts,id'
+        ]);
+
+        $comments = Comment::where('post_id', $request->post_id)
+            ->with(['user:id,username'])
+            ->latest()
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'comments' => $comments
+        ]);
     }
 }
