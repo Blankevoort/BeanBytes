@@ -116,7 +116,7 @@
     </q-dialog>
 
     <q-dialog v-model="shareDialog">
-      <q-card class="q-pa-md">
+      <q-card class="q-pa-md" style="width: 500px">
         <q-card-section>
           <div class="text-h6">Share Post</div>
         </q-card-section>
@@ -392,5 +392,14 @@ onMounted(() => {
   color: #1da1f2;
   cursor: pointer;
   font-weight: bold;
+}
+
+.comment-dialog {
+  width: 100%;
+}
+
+.comments-list {
+  max-height: 300px;
+  overflow-y: auto;
 }
 </style>
