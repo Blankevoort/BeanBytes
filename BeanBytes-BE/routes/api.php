@@ -14,6 +14,8 @@ Route::controller(AuthController::class)->group(function () {
 });
 Route::get('/trending-tags', [PostController::class, 'getTrendingTags']);
 
+Route::get('/search/{value?}', [PostController::class, 'search']);
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();

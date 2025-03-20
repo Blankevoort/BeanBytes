@@ -176,25 +176,59 @@ class UserController extends Controller
     {
         $user = Auth::user();
 
-        $bookmarkedPosts = Interaction::where('user_id', $user->id)
-            ->where('interactionable_type', 'post')
-            ->where('type', 'bookmark')
-            ->with(['interactionable.user:id,username', 'interactionable.comments', 'interactionable.shares', 'interactionable.interactions'])
+        $bookmarkedPosts = Post::whereHas('interactions', function ($query) use ($user) {
+            $query->where('user_id', $user->id)
+                ->where('interactionable_type', 'post')
+                ->where('type', 'bookmark');
+        })
+            ->with([
+                'user:id,username',
+                'tags:id,name',
+                'assets'
+            ])
+            ->withCount('comments')
             ->get()
-            ->map(fn($interaction) => [
-                'id' => $interaction->interactionable->id,
-                'content' => $interaction->interactionable->content,
-                'visibility' => $interaction->interactionable->visibility,
-                'created_at' => $interaction->interactionable->created_at,
-                'user' => [
-                    'id' => $interaction->interactionable->user->id,
-                    'username' => $interaction->interactionable->user->username,
-                ],
-                'comments_count' => $interaction->interactionable->comments->count(),
-                'shares_count' => $interaction->interactionable->shares->count(),
-                'likes_count' => $interaction->interactionable->interactions->where('type', 'like')->count(),
-                'isBookmarked' => true,
-            ]);
+            ->map(function ($post) use ($user) {
+                return [
+                    'id' => $post->id,
+                    'content' => $post->content,
+                    'fullCode' => $post->fullCode,
+                    'visibility' => $post->visibility,
+                    'created_at' => $post->created_at,
+                    'user' => [
+                        'id' => $post->user->id,
+                        'username' => $post->user->username,
+                    ],
+                    'tags' => $post->tags->pluck('name'),
+                    'likes_count' => Interaction::where('interactionable_id', $post->id)
+                        ->where('interactionable_type', Post::class)
+                        ->where('type', 'like')
+                        ->count(),
+                    'comments_count' => $post->comments_count,
+                    'shares_count' => Interaction::where('interactionable_id', $post->id)
+                        ->where('interactionable_type', Post::class)
+                        ->where('type', 'share')
+                        ->count(),
+                    'isLiked' => Interaction::where('user_id', $user->id)
+                        ->where('interactionable_id', $post->id)
+                        ->where('interactionable_type', Post::class)
+                        ->where('type', 'like')
+                        ->exists(),
+                    'isShared' => Interaction::where('user_id', $user->id)
+                        ->where('interactionable_id', $post->id)
+                        ->where('interactionable_type', Post::class)
+                        ->where('type', 'share')
+                        ->exists(),
+                    'isBookmarked' => true, // Since we're only fetching bookmarked posts
+                    'assets' => $post->assets->map(function ($asset) {
+                        return [
+                            'id' => $asset->id,
+                            'type' => $asset->type,
+                            'url' => $asset->getRawOriginal('path'),
+                        ];
+                    })->values(),
+                ];
+            });
 
         return response()->json($bookmarkedPosts);
     }

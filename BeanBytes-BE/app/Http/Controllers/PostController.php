@@ -4,12 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Tag;
 use App\Models\Post;
+use App\Models\User;
 use App\Models\Asset;
 use App\Models\Comment;
 use App\Models\Interaction;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 
 class PostController extends Controller
@@ -137,8 +137,7 @@ class PostController extends Controller
         }
 
         return response()->json([
-            'message' => 'Post created',
-            'post' => $post
+            'status' => 200,
         ]);
     }
 
@@ -180,7 +179,7 @@ class PostController extends Controller
 
         $post->delete();
 
-        return response()->json(['message' => 'Post deleted']);
+        return response()->json(['status' => 200]);
     }
 
     public function getPostComments(Request $request)
@@ -195,7 +194,6 @@ class PostController extends Controller
             ->get();
 
         return response()->json([
-            'success' => true,
             'comments' => $comments
         ]);
     }
@@ -205,9 +203,30 @@ class PostController extends Controller
         $tags = \App\Models\Tag::withCount('posts')
             ->orderByDesc('posts_count')
             ->limit(8)
-            ->pluck('name'); 
+            ->pluck('name');
 
         return response()->json($tags);
     }
 
+    public function search($value = null)
+    {
+        if (!$value) {
+            return response()->json([
+                'tag' => [],
+                'user' => []
+            ]);
+        }
+
+        $tags = Tag::where('name', 'LIKE', "%{$value}%")
+            ->pluck('name');
+
+        $users = User::where('username', 'LIKE', "%{$value}%")
+            ->select('name', 'username')
+            ->get();
+
+        return response()->json([
+            'tag' => $tags,
+            'user' => $users
+        ]);
+    }
 }

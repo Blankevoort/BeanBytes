@@ -27,7 +27,13 @@
         <!-- Tabs -->
 
         <div class="row q-ml-sm">
-          <div class="flex items-center cursor-pointer" @click="postsTabs = 'following'">
+          <div class="flex items-center cursor-pointer" @click="postsTabs = 'posts'">
+            <q-icon size="24px" name="sym_o_receipt_long" :color="postsTabs == 'posts' ? 'primary' : ''" />
+
+            <span class="q-pl-sm">All Posts</span>
+          </div>
+
+          <!-- <div class="flex items-center cursor-pointer" @click="postsTabs = 'following'">
             <q-icon size="24px" name="favorite" :color="postsTabs == 'following' ? 'red' : ''" />
 
             <span class="q-pl-sm">Following</span>
@@ -51,7 +57,7 @@
             />
 
             <span class="q-pl-sm">Trends</span>
-          </div>
+          </div> -->
         </div>
 
         <!-- Posts -->
@@ -116,10 +122,10 @@ import { api } from 'src/boot/axios'
 
 import PostCard from 'src/components/PostCard.vue'
 
-const postsTabs = ref('following')
+const postsTabs = ref('posts')
 const content = ref()
 const posts = ref([])
-const $q = useQuasar
+const $q = useQuasar()
 const showDialog = ref(false)
 const imageFile = ref(null)
 const imagePreview = ref(null)
@@ -144,20 +150,21 @@ async function addPost() {
   }
 
   try {
-    const response = await api
+    await api
       .post('/api/add-post', postData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
-      .then(() => {
-        content.value = ''
-        imageFile.value = null
-        imagePreview.value = null
-        showDialog.value = false
+      .then((r) => {
+        if (r.data.status == 200) {
+          content.value = ''
+          imageFile.value = null
+          imagePreview.value = null
+          showDialog.value = false
+          $q.notify({ message: 'Post created successfully!', color: 'green' })
+        }
       })
-    console.log('Post created successfully:', response.data)
-    $q.notify({ message: 'Post created successfully!', color: 'green' })
   } catch (error) {
-    console.error('Error creating post:', error.response?.data || error)
+    console.error('Error creating post:', error)
     $q.notify({ message: 'Failed to create post', color: 'red' })
   }
 }

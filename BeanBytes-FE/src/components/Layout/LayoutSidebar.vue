@@ -57,7 +57,7 @@
             <q-item-section avatar>
               <q-avatar> <img :src="user?.avatar || 'profile.jpg'" /></q-avatar>
             </q-item-section>
-            <q-item-section>{{ user?.fullname || 'Guest' }}</q-item-section>
+            <q-item-section>{{ user?.username || 'Guest' }}</q-item-section>
           </q-item>
         </q-list>
       </div>
@@ -82,6 +82,7 @@ import { api } from 'src/boot/axios'
 
 const $q = useQuasar()
 const router = useRouter()
+const user = ref(null)
 
 const darkMode = ref(localStorage.getItem('darkMode') === 'true')
 $q.dark.set(darkMode.value)
@@ -93,7 +94,7 @@ const toggleDarkMode = () => {
 
 const handleBookmarksClick = () => {
   if (!user.value) {
-    router.push('/settings/account')
+    router.push('/account')
   } else {
     router.push('/bookmarks')
   }
@@ -106,8 +107,6 @@ const handleSettingsClick = () => {
     router.push('/settings/account')
   }
 }
-
-const user = ref(null)
 
 const fetchUser = async () => {
   try {

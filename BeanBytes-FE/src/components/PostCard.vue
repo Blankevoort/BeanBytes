@@ -239,6 +239,21 @@ function formatDate(date) {
   return diffInDays < 30 ? `${diffInDays} days ago` : new Date(date).toLocaleDateString()
 }
 
+function savePost(postId) {
+  const postData = new FormData()
+  postData.append('post_id', postId)
+
+  api
+    .post('/api/post/save', postData)
+    .then((response) => {
+      window.location.reload()
+      console.log('Post saved successfully:', response.data)
+    })
+    .catch((error) => {
+      console.error('Error saving post:', error.response.data)
+    })
+}
+
 async function toggleLike(postId) {
   try {
     const response = await api.post('/api/add-post/like', { post_id: postId })
@@ -256,31 +271,20 @@ async function toggleLike(postId) {
 }
 
 async function sharePost(postId) {
-  if (localPost.isShared) {
-    postShareLink.value = `${window.location.origin}/post/${postId}`
-    shareDialog.value = true
-    return
-  }
-
   try {
-    const response = await api.post('/api/add-post/share', { post_id: postId })
+    await api.post('/api/add-post/share', { post_id: postId })
 
-    localPost.shares_count = response.data.shares_count
-    localPost.isShared = true
+    const updatedPost = await api.get(`/api/get-post/${postId}`)
+    localPost.shares_count = updatedPost.data.shares_count
+    localPost.isShared = updatedPost.data.isShared
 
     postShareLink.value = `${window.location.origin}/post/${postId}`
     shareDialog.value = true
 
-    $q.notify({
-      message: response.data.message,
-      color: 'green',
-    })
+    $q.notify({ message: 'Post shared successfully!', color: 'green' })
   } catch (error) {
     console.error('Error sharing post:', error.response?.data || error.message)
-    $q.notify({
-      message: 'Failed to share the post!',
-      color: 'red',
-    })
+    $q.notify({ message: 'Failed to share the post!', color: 'red' })
   }
 }
 

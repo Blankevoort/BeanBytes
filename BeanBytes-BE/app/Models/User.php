@@ -11,7 +11,7 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable, HasApiTokens;
 
-    protected $fillable = ['fullname', 'username', 'email', 'phone', 'jobTitle', 'password'];
+    protected $fillable = ['name', 'username', 'email', 'phone', 'jobTitle', 'password'];
 
     protected static function boot()
     {
@@ -20,7 +20,7 @@ class User extends Authenticatable
         static::creating(function ($user) {
             $randomNumber = rand(10000, 99999);
 
-            $user->fullname = $user->fullname ?? "User{$randomNumber} Fullname";
+            $user->name = $user->name ?? "User{$randomNumber} Name";
             $user->username = $user->username ?? "User{$randomNumber} Username";
             $user->jobTitle = $user->jobTitle ?? "User{$randomNumber} jobTitle";
         });
