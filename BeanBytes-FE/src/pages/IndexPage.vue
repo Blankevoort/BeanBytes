@@ -74,6 +74,7 @@
         <q-separator />
 
         <!-- File Input -->
+
         <q-card-section>
           <q-file
             v-model="imageFile"
@@ -84,6 +85,7 @@
           />
 
           <!-- Image Preview -->
+
           <div v-if="imagePreview" class="q-mt-md">
             <q-img :src="imagePreview" style="max-height: 200px; max-width: 100%" />
           </div>
@@ -92,6 +94,7 @@
         <q-separator />
 
         <!-- Upload Button -->
+
         <q-card-actions align="right">
           <q-btn label="Cancel" flat v-close-popup />
           <q-btn
@@ -108,9 +111,10 @@
 
 <script setup>
 import { onMounted, ref } from 'vue'
-import { api } from 'src/boot/axios'
-import PostCard from 'src/components/PostCard.vue'
 import { useQuasar } from 'quasar'
+import { api } from 'src/boot/axios'
+
+import PostCard from 'src/components/PostCard.vue'
 
 const postsTabs = ref('following')
 const content = ref()

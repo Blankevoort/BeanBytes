@@ -2,7 +2,7 @@
   <div class="sidebar-container">
     <div class="left-sidebar">
       <div class="q-px-lg flex items-center" style="height: 55px">
-        <q-avatar>
+        <q-avatar class="cursor-pointer" @click="router.push('/')">
           <img src="https://cdn.quasar.dev/logo-v2/svg/logo-mono-white.svg" />
         </q-avatar>
       </div>

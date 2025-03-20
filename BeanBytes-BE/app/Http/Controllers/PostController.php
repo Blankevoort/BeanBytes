@@ -183,12 +183,6 @@ class PostController extends Controller
         return response()->json(['message' => 'Post deleted']);
     }
 
-    public function getRandomTags()
-    {
-        $tags = Tag::inRandomOrder()->limit(8)->get(['name']);
-        return response()->json($tags);
-    }
-
     public function getPostComments(Request $request)
     {
         $request->validate([
@@ -205,4 +199,15 @@ class PostController extends Controller
             'comments' => $comments
         ]);
     }
+
+    public function getTrendingTags()
+    {
+        $tags = \App\Models\Tag::withCount('posts')
+            ->orderByDesc('posts_count')
+            ->limit(8)
+            ->pluck('name'); 
+
+        return response()->json($tags);
+    }
+
 }
