@@ -6,23 +6,23 @@
       <q-form @submit="updateUser">
         <div class="row">
           <div class="col-xs-12 col-sm-12 col-md-6 col-lg-6 col-xl-6 q-pa-sm">
-            <q-input class="form-inputs" bordered placeholder="Fullname" v-model="fullname" />
+            <q-input class="form-inputs" placeholder="Fullname" v-model="fullname" />
           </div>
 
           <div class="col-xs-12 col-sm-12 col-md-6 col-lg-6 col-xl-6 q-pa-sm">
-            <q-input class="form-inputs" bordered placeholder="Username" v-model="username" />
+            <q-input class="form-inputs" placeholder="Username" v-model="username" />
           </div>
 
           <div class="col-xs-12 col-sm-12 col-md-6 col-lg-6 col-xl-6 q-pa-sm">
-            <q-input class="form-inputs" bordered placeholder="Email" v-model="email" />
+            <q-input class="form-inputs" placeholder="Email" v-model="email" />
           </div>
 
           <div class="col-xs-12 col-sm-12 col-md-6 col-lg-6 col-xl-6 q-pa-sm">
-            <q-input class="form-inputs" bordered placeholder="Phone" v-model="phone" />
+            <q-input class="form-inputs" placeholder="Phone" v-model="phone" />
           </div>
 
           <div class="col-xs-12 col-sm-12 col-md-6 col-lg-6 col-xl-6 q-pa-sm">
-            <q-input class="form-inputs" bordered placeholder="Job Title" v-model="jobTitle" />
+            <q-input class="form-inputs" placeholder="Job Title" v-model="jobTitle" />
           </div>
         </div>
 
@@ -58,7 +58,7 @@ function updateUser() {
       jobTitle: jobTitle.value,
     })
     .then(() => {
-      window.location.reload();
+      window.location.reload()
     })
     .catch((err) => {
       handleApiError(err)
@@ -70,7 +70,6 @@ function updateUser() {
 .form-inputs input {
   width: 100%;
   background-color: #2a2a2a;
-  border-radius: 4px;
   padding: 0.75rem;
   color: #fff;
   font-size: 0.9rem;

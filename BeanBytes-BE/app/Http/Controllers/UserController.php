@@ -219,14 +219,17 @@ class UserController extends Controller
                         ->where('interactionable_type', Post::class)
                         ->where('type', 'share')
                         ->exists(),
-                    'isBookmarked' => true, // Since we're only fetching bookmarked posts
-                    'assets' => $post->assets->map(function ($asset) {
-                        return [
-                            'id' => $asset->id,
-                            'type' => $asset->type,
-                            'url' => $asset->getRawOriginal('path'),
-                        ];
-                    })->values(),
+                    'isBookmarked' => true,
+                    'assets' => Asset::where('assetable_id', $post->id)
+                        ->where('assetable_type', 'App\Models\Post')
+                        ->get()
+                        ->map(function ($asset) {
+                            return [
+                                'id' => $asset->id,
+                                'type' => $asset->type,
+                                'url' => $asset->getRawOriginal('path'),
+                            ];
+                        }),
                 ];
             });
 

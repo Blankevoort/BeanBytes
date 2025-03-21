@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Asset;
 use App\Models\Interaction;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -29,11 +30,6 @@ class Post extends Model
     public function comments()
     {
         return $this->hasMany(Comment::class);
-    }
-
-    public function shares()
-    {
-        return $this->hasMany(Share::class);
     }
 
     public function assets()

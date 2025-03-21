@@ -167,7 +167,7 @@ const fetchSearchResults = debounce(async () => {
     console.error('Search failed:', error)
     isDropdownOpen.value = false
   }
-}, 300)
+}, 500)
 
 watch(searchInput, fetchSearchResults)
 

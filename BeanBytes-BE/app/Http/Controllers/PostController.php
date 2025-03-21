@@ -16,7 +16,7 @@ class PostController extends Controller
 {
     public function getAllPosts()
     {
-        $user = Auth::check() ? Auth::user() : null;
+        $user = Auth::guard('sanctum')->user();
 
         $posts = Post::with([
             'user:id,username',
@@ -56,17 +56,21 @@ class PostController extends Controller
                         ->where('interactionable_type', Post::class)
                         ->where('type', 'share')
                         ->exists() : false,
-                    'isBookmarked' => $user ? $post->interactions()
-                        ->where('user_id', $user->id)
+                    'isBookmarked' => $user ? Interaction::where('user_id', $user->id)
+                        ->where('interactionable_id', $post->id)
+                        ->where('interactionable_type', Post::class)
                         ->where('type', 'bookmark')
                         ->exists() : false,
-                    'assets' => $post->assets->map(function ($asset) {
-                        return [
-                            'id' => $asset->id,
-                            'type' => $asset->type,
-                            'url' => $asset->getRawOriginal('path'),
-                        ];
-                    })->values(),
+                    'assets' => Asset::where('assetable_id', $post->id)
+                        ->where('assetable_type', 'App\Models\Post')
+                        ->get()
+                        ->map(function ($asset) {
+                            return [
+                                'id' => $asset->id,
+                                'type' => $asset->type,
+                                'url' => $asset->getRawOriginal('path'),
+                            ];
+                        }),
                 ];
             });
 
@@ -180,6 +184,67 @@ class PostController extends Controller
         $post->delete();
 
         return response()->json(['status' => 200]);
+    }
+
+    public function getPost($id)
+    {
+        $user = Auth::guard('sanctum')->user();
+
+        $post = Post::with([
+            'user:id,username',
+            'tags:id,name',
+            'assets'
+        ])
+            ->withCount('comments')
+            ->findOrFail($id);
+
+        $response = [
+            'id' => $post->id,
+            'content' => $post->content,
+            'fullCode' => $post->fullCode,
+            'visibility' => $post->visibility,
+            'created_at' => $post->created_at,
+            'user' => [
+                'id' => $post->user->id,
+                'username' => $post->user->username,
+            ],
+            'tags' => $post->tags->pluck('name'),
+            'likes_count' => Interaction::where('interactionable_id', $post->id)
+                ->where('interactionable_type', Post::class)
+                ->where('type', 'like')
+                ->count(),
+            'comments_count' => $post->comments_count,
+            'shares_count' => Interaction::where('interactionable_id', $post->id)
+                ->where('interactionable_type', Post::class)
+                ->where('type', 'share')
+                ->count(),
+            'isLiked' => $user ? Interaction::where('user_id', $user->id)
+                ->where('interactionable_id', $post->id)
+                ->where('interactionable_type', Post::class)
+                ->where('type', 'like')
+                ->exists() : false,
+            'isShared' => $user ? Interaction::where('user_id', $user->id)
+                ->where('interactionable_id', $post->id)
+                ->where('interactionable_type', Post::class)
+                ->where('type', 'share')
+                ->exists() : false,
+            'isBookmarked' => $user ? $post->interactions()
+                ->where('user_id', $user->id)
+                ->where('type', 'bookmark')
+                ->exists() : false,
+            'assets' => Asset::where('assetable_id', $post->id)
+                ->where('assetable_type', 'App\Models\Post')
+                ->get()
+                ->map(function ($asset) {
+                    return [
+                        'id' => $asset->id,
+                        'type' => $asset->type,
+                        'url' => $asset->getRawOriginal('path'),
+                    ];
+                }),
+        ];
+
+        return response()->json($response);
     }
 
     public function getPostComments(Request $request)

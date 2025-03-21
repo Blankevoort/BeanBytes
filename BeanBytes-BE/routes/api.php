@@ -14,13 +14,14 @@ Route::controller(AuthController::class)->group(function () {
 });
 Route::get('/trending-tags', [PostController::class, 'getTrendingTags']);
 
+Route::get('/get-posts', [PostController::class, 'getAllPosts']);
+Route::get('/get-post/{id}', [PostController::class, 'getPost']);
 Route::get('/search/{value?}', [PostController::class, 'search']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
-    Route::get('/get-posts', [PostController::class, 'getAllPosts']);
 
     Route::get('/user/bookmarks', [UserController::class, 'userBookmarks']);
     Route::put('/user/update', [UserController::class, 'updateUser']);
