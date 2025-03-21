@@ -22,6 +22,11 @@ class Interaction extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function toUser()
+    {
+        return $this->belongsTo(User::class, 'to_user_id');
+    }
+
     public function interactionable()
     {
         return $this->morphTo();
@@ -30,5 +35,21 @@ class Interaction extends Model
     public function sharedPost()
     {
         return $this->belongsTo(Post::class, 'shared_post_id');
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::created(function ($interaction) {
+            if (in_array($interaction->type, ['like', 'follow', 'comment', 'reply']) && $interaction->to_user_id) {
+                Notification::create([
+                    'user_id' => $interaction->to_user_id,
+                    'notifiable_id' => $interaction->interactionable_id,
+                    'notifiable_type' => $interaction->interactionable_type,
+                    'type' => $interaction->type,
+                ]);
+            }
+        });
     }
 }

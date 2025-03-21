@@ -28,7 +28,11 @@
 
         <div class="row q-ml-sm">
           <div class="flex items-center cursor-pointer" @click="postsTabs = 'posts'">
-            <q-icon size="24px" name="sym_o_receipt_long" :color="postsTabs == 'posts' ? 'primary' : ''" />
+            <q-icon
+              size="24px"
+              name="sym_o_receipt_long"
+              :color="postsTabs == 'posts' ? 'primary' : ''"
+            />
 
             <span class="q-pl-sm">All Posts</span>
           </div>
@@ -162,6 +166,7 @@ async function addPost() {
           showDialog.value = false
           $q.notify({ message: 'Post created successfully!', color: 'green' })
         }
+        fetchPosts()
       })
   } catch (error) {
     console.error('Error creating post:', error)

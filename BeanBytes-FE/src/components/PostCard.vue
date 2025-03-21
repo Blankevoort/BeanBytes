@@ -1,6 +1,7 @@
 <template>
   <div class="q-pa-md q-ml-sm q-my-md post-container">
     <!-- User Info -->
+
     <div class="row justify-between">
       <div class="cursor-pointer row q-gutter-x-md">
         <q-avatar size="32px">
@@ -8,7 +9,19 @@
         </q-avatar>
 
         <div>
-          <p>{{ post.user.username }}</p>
+          <p>
+            {{ post.user.username }}
+
+            <q-btn
+              v-if="localPost.user.id !== authUserId"
+              :label="localPost.isFollowed ? 'Following' : 'Follow'"
+              :color="localPost.isFollowed ? 'grey' : 'primary'"
+              flat
+              dense
+              @click="toggleFollow(localPost.user.id)"
+            />
+          </p>
+
           <p class="time-text">{{ formatDate(post.created_at) }}</p>
         </div>
       </div>
@@ -156,7 +169,7 @@
 
         <q-card-section class="comments-list">
           <q-list v-if="comments.length">
-            <q-item v-for="comment in comments" :key="comment.id">
+            <q-item v-for="comment in comments" :key="comment.id" class="q-mt-sm">
               <q-item-section avatar>
                 <q-avatar size="24px">
                   <img :src="comment.user.profile_picture || 'default-profile.jpg'" />
@@ -183,12 +196,13 @@
 <script setup>
 import { computed, defineProps, ref, onMounted, reactive } from 'vue'
 import { useQuasar } from 'quasar'
+import { api } from 'src/boot/axios'
+
 import 'highlight.js/styles/github-dark.min.css'
 import hljs from 'highlight.js'
 
-import { api } from 'src/boot/axios'
-
 const $q = useQuasar()
+const authUserId = ref(null)
 const imageDialog = ref(false)
 const selectedImage = ref('')
 const isExpanded = ref(false)
@@ -201,6 +215,10 @@ const comments = ref([])
 
 const props = defineProps({
   post: Object,
+})
+
+const localPost = reactive({
+  ...props.post,
 })
 
 const fixedAssets = computed(() => {
@@ -219,10 +237,6 @@ const cleanedContent = computed(() => {
 
 const truncatedCode = computed(() => {
   return props.post.fullCode.split('\n').slice(0, 4).join('\n') + '\n...'
-})
-
-const localPost = reactive({
-  ...props.post,
 })
 
 function formatDate(date) {
@@ -254,6 +268,26 @@ function savePost(postId) {
     })
 }
 
+const toggleFollow = async (userId) => {
+  try {
+    const response = await api.post('/api/user/follow', { user_id: userId })
+
+    localPost.isFollowed =
+      typeof response.data.isFollowed !== 'undefined' ? response.data.isFollowed : false
+
+    $q.notify({
+      message: response.data.message,
+      color: localPost.isFollowed ? 'positive' : 'negative',
+    })
+  } catch (error) {
+    console.error('Follow error:', error.response?.data || error.message)
+    $q.notify({
+      message: 'Failed to update follow status',
+      color: 'negative',
+    })
+  }
+}
+
 async function toggleLike(postId) {
   try {
     const response = await api.post('/api/add-post/like', { post_id: postId })
@@ -271,6 +305,12 @@ async function toggleLike(postId) {
 }
 
 async function sharePost(postId) {
+  if (localPost.isShared) {
+    postShareLink.value = `${window.location.origin}/post/${postId}`
+    shareDialog.value = true
+    return
+  }
+
   try {
     await api.post('/api/add-post/share', { post_id: postId })
 
@@ -301,15 +341,6 @@ function copyPostLink() {
 function openImage(url) {
   selectedImage.value = url
   imageDialog.value = true
-}
-
-const highlightCodeBlocks = () => {
-  document.querySelectorAll('pre code').forEach((block) => {
-    if (!block.dataset.highlighted) {
-      hljs.highlightElement(block)
-      block.dataset.highlighted = 'yes'
-    }
-  })
 }
 
 async function addComment(postId) {
@@ -344,7 +375,7 @@ async function openCommentDialog() {
   commentDialog.value = true
 
   try {
-    const response = await api.get(`/api/get-post/comments?post_id=${props.post.id}`)
+    const response = await api.get(`/api/get-comments?post_id=${props.post.id}`)
     comments.value = response.data.comments
   } catch (error) {
     console.error('Error fetching comments:', error.response?.data || error.message)
@@ -352,8 +383,27 @@ async function openCommentDialog() {
   }
 }
 
+const highlightCodeBlocks = () => {
+  document.querySelectorAll('pre code').forEach((block) => {
+    if (!block.dataset.highlighted) {
+      hljs.highlightElement(block)
+      block.dataset.highlighted = 'yes'
+    }
+  })
+}
+
+const fetchUser = async () => {
+  try {
+    const { data } = await api.get('/api/user')
+    authUserId.value = data.id
+  } catch (error) {
+    console.error('Error fetching user:', error)
+  }
+}
+
 onMounted(() => {
   highlightCodeBlocks()
+  fetchUser()
 })
 </script>
 

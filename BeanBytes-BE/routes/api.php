@@ -22,6 +22,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
+    Route::post('/user/follow', [UserController::class, 'toggleFollow']);
 
     Route::get('/user/bookmarks', [UserController::class, 'userBookmarks']);
     Route::put('/user/update', [UserController::class, 'updateUser']);
@@ -29,7 +30,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/add-post/like', [UserController::class, 'addLike']);
     Route::post('/add-post/comment', [UserController::class, 'addComment']);
     Route::post('/add-post/share', [UserController::class, 'sharePost']);
-    Route::get('/get-post/comments', [PostController::class, 'getPostComments']);
+    Route::get('/get-comments', [PostController::class, 'getPostComments']);
 
     Route::post('/add-post', [PostController::class, 'createPost']);
     Route::put('/edit-post/{post}', [PostController::class, 'editPost']);

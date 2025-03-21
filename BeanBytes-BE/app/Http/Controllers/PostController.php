@@ -61,6 +61,11 @@ class PostController extends Controller
                         ->where('interactionable_type', Post::class)
                         ->where('type', 'bookmark')
                         ->exists() : false,
+                    'isFollowed' => $user ? Interaction::where('user_id', $user->id)
+                        ->where('interactionable_id', $post->user->id)
+                        ->where('interactionable_type', User::class)
+                        ->where('type', 'follow')
+                        ->exists() : false,
                     'assets' => Asset::where('assetable_id', $post->id)
                         ->where('assetable_type', 'App\Models\Post')
                         ->get()
@@ -232,6 +237,11 @@ class PostController extends Controller
                 ->where('user_id', $user->id)
                 ->where('type', 'bookmark')
                 ->exists() : false,
+            'isFollowed' => $user ? Interaction::where('user_id', $user->id)
+                ->where('interactionable_id', $post->user->id)
+                ->where('interactionable_type', User::class)
+                ->where('type', 'follow')
+                ->exists() : false,
             'assets' => Asset::where('assetable_id', $post->id)
                 ->where('assetable_type', 'App\Models\Post')
                 ->get()
@@ -252,6 +262,7 @@ class PostController extends Controller
         $request->validate([
             'post_id' => 'required|exists:posts,id'
         ]);
+
 
         $comments = Comment::where('post_id', $request->post_id)
             ->with(['user:id,username'])

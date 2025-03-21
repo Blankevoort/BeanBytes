@@ -20,5 +20,14 @@ class DatabaseSeeder extends Seeder
             'phone' => '09379608155',
             'password' => Hash::make('Moeen576786'),
         ]);
+
+        User::create([
+            'name' => 'aylar_jorjany',
+            'username' => 'Aylar',
+            'jobTitle' => 'Tailor',
+            'email' => 'moeensedaghaty71@gmail.com',
+            'phone' => '09119669692',
+            'password' => Hash::make('Moeen576786'),
+        ]);
     }
 }
