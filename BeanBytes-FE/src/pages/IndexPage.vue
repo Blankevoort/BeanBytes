@@ -27,23 +27,13 @@
         <!-- Tabs -->
 
         <div class="row q-ml-sm">
-          <div class="flex items-center cursor-pointer" @click="postsTabs = 'posts'">
-            <q-icon
-              size="24px"
-              name="sym_o_receipt_long"
-              :color="postsTabs == 'posts' ? 'primary' : ''"
-            />
-
-            <span class="q-pl-sm">All Posts</span>
-          </div>
-
-          <!-- <div class="flex items-center cursor-pointer" @click="postsTabs = 'following'">
+          <div class="flex items-center cursor-pointer" @click="postsTabs = 'following'">
             <q-icon size="24px" name="favorite" :color="postsTabs == 'following' ? 'red' : ''" />
 
             <span class="q-pl-sm">Following</span>
           </div>
 
-          <div class="flex items-center cursor-pointer q-ml-lg" @click="postsTabs = 'featured'">
+          <!-- <div class="flex items-center cursor-pointer q-ml-lg" @click="postsTabs = 'featured'">
             <q-icon
               size="24px"
               name="local_fire_department"
@@ -51,7 +41,7 @@
             />
 
             <span class="q-pl-sm">Featured</span>
-          </div>
+          </div> -->
 
           <div class="flex items-center cursor-pointer q-ml-lg" @click="postsTabs = 'trends'">
             <q-icon
@@ -61,16 +51,71 @@
             />
 
             <span class="q-pl-sm">Trends</span>
-          </div> -->
+          </div>
+
+          <div class="flex items-center cursor-pointer q-ml-lg" @click="postsTabs = 'posts'">
+            <q-icon
+              size="24px"
+              name="sym_o_receipt_long"
+              :color="postsTabs == 'posts' ? 'primary' : ''"
+            />
+
+            <span class="q-pl-sm">All Posts</span>
+          </div>
         </div>
 
         <!-- Posts -->
 
-        <div v-if="posts">
-          <PostCard v-for="post in posts" :key="post.id" :post="post" />
-        </div>
+        <q-tab-panels v-model="postsTabs" animated>
+          <q-tab-panel name="posts">
+            <div v-if="posts.length === 0">
+              <p class="text-grey">No posts.</p>
+            </div>
 
-        <div v-else>No posts found.</div>
+            <div v-else>
+              <PostCard
+                v-for="post in posts"
+                :key="post.id"
+                :post="post"
+                @update-follow-status="updateFollowStatus"
+              />
+            </div>
+          </q-tab-panel>
+
+          <q-tab-panel name="following">
+            <div v-if="posts.length === 0">
+              <p class="text-grey">No posts from followed users.</p>
+            </div>
+
+            <div v-else>
+              <PostCard
+                v-for="post in posts"
+                :key="post.id"
+                :post="post"
+                @update-follow-status="updateFollowStatus"
+              />
+            </div>
+          </q-tab-panel>
+
+          <!-- <q-tab-panel name="featured">
+            <div class="text-grey">Featured posts will be implemented later.</div>
+          </q-tab-panel> -->
+
+          <q-tab-panel name="trends">
+            <div v-if="posts.length === 0">
+              <p class="text-grey">No trending posts.</p>
+            </div>
+
+            <div v-else>
+              <PostCard
+                v-for="post in posts"
+                :key="post.id"
+                :post="post"
+                @update-follow-status="updateFollowStatus"
+              />
+            </div>
+          </q-tab-panel>
+        </q-tab-panels>
       </div>
     </div>
 
@@ -134,13 +179,36 @@ const showDialog = ref(false)
 const imageFile = ref(null)
 const imagePreview = ref(null)
 
-async function fetchPosts() {
+const fetchPosts = async () => {
+  posts.value = []
+
   try {
-    const r = await api.get('/api/get-posts')
-    posts.value = r.data
+    let response
+
+    if (postsTabs.value === 'following') {
+      response = await api.get('/api/posts/following')
+    } else if (postsTabs.value === 'trends') {
+      response = await api.get('/api/posts/trending')
+    } else if (postsTabs.value === 'posts') {
+      response = await api.get('/api/get-posts')
+    } else {
+      posts.value = []
+      return
+    }
+    console.log(response)
+
+    posts.value = response.data
   } catch (error) {
-    console.error('Error fetching posts:', error.r?.data || error.message)
+    console.error('Error fetching posts:', error)
   }
+}
+
+const updateFollowStatus = ({ userId, isFollowed }) => {
+  posts.value.forEach((post) => {
+    if (post.user.id === userId) {
+      post.isFollowed = isFollowed
+    }
+  })
 }
 
 async function addPost() {

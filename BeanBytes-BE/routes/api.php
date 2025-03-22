@@ -14,6 +14,8 @@ Route::controller(AuthController::class)->group(function () {
 });
 Route::get('/trending-tags', [PostController::class, 'getTrendingTags']);
 
+Route::get('/posts/following', [PostController::class, 'getFollowingPosts']);
+Route::get('/posts/trending', [PostController::class, 'getTrendingPosts']);
 Route::get('/get-posts', [PostController::class, 'getAllPosts']);
 Route::get('/get-post/{id}', [PostController::class, 'getPost']);
 Route::get('/search/{value?}', [PostController::class, 'search']);

@@ -195,7 +195,7 @@
 </template>
 
 <script setup>
-import { computed, defineProps, ref, onMounted, reactive } from 'vue'
+import { computed, defineProps, ref, onMounted, reactive, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import { api } from 'src/boot/axios'
@@ -225,6 +225,10 @@ const props = defineProps({
 const localPost = reactive({
   ...props.post,
 })
+
+watch(() => props.post, (newPost) => {
+  Object.assign(localPost, newPost)
+}, { deep: true })
 
 const fixedAssets = computed(() => {
   return props.post.assets.map((asset) => {
@@ -273,23 +277,22 @@ function savePost(postId) {
     })
 }
 
+const emit = defineEmits(['update-follow-status'])
+
 const toggleFollow = async (userId) => {
   try {
     const response = await api.post('/api/user/follow', { user_id: userId })
+    const isFollowed = response.data.isFollowed ?? false
 
-    localPost.isFollowed =
-      typeof response.data.isFollowed !== 'undefined' ? response.data.isFollowed : false
+    emit('update-follow-status', { userId, isFollowed })
 
     $q.notify({
       message: response.data.message,
-      color: localPost.isFollowed ? 'positive' : 'negative',
+      color: isFollowed ? 'positive' : 'negative',
     })
   } catch (error) {
     console.error('Follow error:', error.response?.data || error.message)
-    $q.notify({
-      message: 'Failed to update follow status',
-      color: 'negative',
-    })
+    $q.notify({ message: 'Failed to update follow status', color: 'negative' })
   }
 }
 

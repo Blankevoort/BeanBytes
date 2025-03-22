@@ -307,4 +307,112 @@ class PostController extends Controller
             'user' => $users
         ]);
     }
+
+    public function getFollowingPosts()
+    {
+        $user = Auth::guard('sanctum')->user();
+
+        $followingIds = Interaction::where([
+            ['user_id', $user->id],
+            ['interactionable_type', User::class],
+            ['type', 'follow']
+        ])->pluck('interactionable_id');
+
+        $posts = Post::with([
+            'user:id,username',
+            'tags:id,name',
+            'assets'
+        ])
+            ->withCount('comments')
+            ->whereIn('user_id', $followingIds)
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(fn($post) => $this->transformPost($post, $user));
+
+        return response()->json($posts);
+    }
+
+    public function getTrendingPosts()
+    {
+        $user = Auth::guard('sanctum')->user();
+
+        $posts = Post::with([
+            'user:id,username',
+            'tags:id,name',
+            'assets'
+        ])
+            ->withCount('comments')
+            ->withCount(['interactions as likes_count' => fn($query) => $query->where('type', 'like')])
+            ->withCount(['interactions as shares_count' => fn($query) => $query->where('type', 'share')])
+            ->orderByDesc('likes_count')
+            ->orderByDesc('shares_count')
+            ->orderByDesc('comments_count')
+            ->take(20)
+            ->get()
+            ->map(fn($post) => $this->transformPost($post, $user));
+
+        return response()->json($posts);
+    }
+
+    private function transformPost($post, $user)
+    {
+        return [
+            'id' => $post->id,
+            'content' => $post->content,
+            'fullCode' => $post->fullCode,
+            'visibility' => $post->visibility,
+            'created_at' => $post->created_at,
+            'user' => [
+                'id' => $post->user->id,
+                'name' => $post->user->name,
+                'username' => $post->user->username,
+            ],
+            'tags' => $post->tags->pluck('name'),
+            'likes_count' => $post->likes_count ?? Interaction::where([
+                ['interactionable_id', $post->id],
+                ['interactionable_type', Post::class],
+                ['type', 'like']
+            ])->count(),
+            'comments_count' => $post->comments_count,
+            'shares_count' => $post->shares_count ?? Interaction::where([
+                ['interactionable_id', $post->id],
+                ['interactionable_type', Post::class],
+                ['type', 'share']
+            ])->count(),
+            'isLiked' => $user ? Interaction::where([
+                ['user_id', $user->id],
+                ['interactionable_id', $post->id],
+                ['interactionable_type', Post::class],
+                ['type', 'like']
+            ])->exists() : false,
+            'isShared' => $user ? Interaction::where([
+                ['user_id', $user->id],
+                ['interactionable_id', $post->id],
+                ['interactionable_type', Post::class],
+                ['type', 'share']
+            ])->exists() : false,
+            'isBookmarked' => $user ? Interaction::where([
+                ['user_id', $user->id],
+                ['interactionable_id', $post->id],
+                ['interactionable_type', Post::class],
+                ['type', 'bookmark']
+            ])->exists() : false,
+            'isFollowed' => $user ? Interaction::where([
+                ['user_id', $user->id],
+                ['interactionable_id', $post->user->id],
+                ['interactionable_type', User::class],
+                ['type', 'follow']
+            ])->exists() : false,
+            'assets' => Asset::where([
+                ['assetable_id', $post->id],
+                ['assetable_type', 'App\Models\Post']
+            ])
+                ->get()
+                ->map(fn($asset) => [
+                    'id' => $asset->id,
+                    'type' => $asset->type,
+                    'url' => $asset->getRawOriginal('path'),
+                ]),
+        ];
+    }
 }
