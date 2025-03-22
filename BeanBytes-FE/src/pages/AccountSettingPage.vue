@@ -6,7 +6,7 @@
       <q-form @submit="updateUser">
         <div class="row">
           <div class="col-xs-12 col-sm-12 col-md-6 col-lg-6 col-xl-6 q-pa-sm">
-            <q-input class="form-inputs" placeholder="Fullname" v-model="fullname" />
+            <q-input class="form-inputs" placeholder="name" v-model="name" />
           </div>
 
           <div class="col-xs-12 col-sm-12 col-md-6 col-lg-6 col-xl-6 q-pa-sm">
@@ -37,32 +37,44 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watchEffect } from 'vue'
 import { api } from 'src/boot/axios'
 import { useErrorHandling } from 'src/composables/useErrorHandling'
+import { useAuthStore } from 'src/stores/auth'
 
-const fullname = ref()
-const username = ref()
-const phone = ref()
-const email = ref()
-const jobTitle = ref()
+const authStore = useAuthStore()
 const { handleApiError } = useErrorHandling()
 
-function updateUser() {
-  api
-    .put('api/user/update', {
-      fullname: fullname.value,
+const name = ref('')
+const username = ref('')
+const phone = ref('')
+const email = ref('')
+const jobTitle = ref('')
+
+watchEffect(() => {
+  if (authStore.user) {
+    name.value = authStore.user.name
+    username.value = authStore.user.username
+    phone.value = authStore.user.phone
+    email.value = authStore.user.email
+    jobTitle.value = authStore.user.jobTitle
+  }
+})
+
+async function updateUser() {
+  try {
+    const { data } = await api.put('api/user/update', {
+      name: name.value,
       username: username.value,
       phone: phone.value,
       email: email.value,
       jobTitle: jobTitle.value,
     })
-    .then(() => {
-      window.location.reload()
-    })
-    .catch((err) => {
-      handleApiError(err)
-    })
+
+    authStore.setUser(data.user)
+  } catch (err) {
+    handleApiError(err)
+  }
 }
 </script>
 

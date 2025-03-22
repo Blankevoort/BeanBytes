@@ -34,6 +34,7 @@ class PostController extends Controller
                     'created_at' => $post->created_at,
                     'user' => [
                         'id' => $post->user->id,
+                        'name' => $post->user->name,
                         'username' => $post->user->username,
                     ],
                     'tags' => $post->tags->pluck('name'),
@@ -211,6 +212,7 @@ class PostController extends Controller
             'created_at' => $post->created_at,
             'user' => [
                 'id' => $post->user->id,
+                'name' => $post->user->name,
                 'username' => $post->user->username,
             ],
             'tags' => $post->tags->pluck('name'),

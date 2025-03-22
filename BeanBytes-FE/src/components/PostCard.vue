@@ -4,13 +4,13 @@
 
     <div class="row justify-between">
       <div class="cursor-pointer row q-gutter-x-md">
-        <q-avatar size="32px">
+        <q-avatar size="32px" @click="router.push('user/' + user.name)">
           <img :src="post.user.profile_picture || 'default-profile.jpg'" />
         </q-avatar>
 
         <div>
           <p>
-            {{ post.user.username }}
+            <span @click="router.push('user/' + post.user.name)">{{ post.user.username }}</span>
 
             <q-btn
               v-if="localPost.user.id !== authUserId"
@@ -18,6 +18,7 @@
               :color="localPost.isFollowed ? 'grey' : 'primary'"
               flat
               dense
+              no-caps
               @click="toggleFollow(localPost.user.id)"
             />
           </p>
@@ -196,13 +197,16 @@
 <script setup>
 import { computed, defineProps, ref, onMounted, reactive } from 'vue'
 import { useQuasar } from 'quasar'
+import { useRouter } from 'vue-router'
 import { api } from 'src/boot/axios'
 
+import { useAuthStore } from 'src/stores/auth'
 import 'highlight.js/styles/github-dark.min.css'
 import hljs from 'highlight.js'
 
 const $q = useQuasar()
-const authUserId = ref(null)
+const authStore = useAuthStore()
+const authUserId = computed(() => authStore.user?.id || null)
 const imageDialog = ref(false)
 const selectedImage = ref('')
 const isExpanded = ref(false)
@@ -212,6 +216,7 @@ const shareDialog = ref(false)
 const postShareLink = ref('')
 const commentDialog = ref(false)
 const comments = ref([])
+const router = useRouter()
 
 const props = defineProps({
   post: Object,
@@ -392,18 +397,9 @@ const highlightCodeBlocks = () => {
   })
 }
 
-const fetchUser = async () => {
-  try {
-    const { data } = await api.get('/api/user')
-    authUserId.value = data.id
-  } catch (error) {
-    console.error('Error fetching user:', error)
-  }
-}
-
 onMounted(() => {
+  authStore.fetchUser()
   highlightCodeBlocks()
-  fetchUser()
 })
 </script>
 

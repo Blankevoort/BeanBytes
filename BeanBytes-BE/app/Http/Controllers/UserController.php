@@ -65,14 +65,24 @@ class UserController extends Controller
             return response()->json(['message' => 'Post not found'], 404);
         }
 
-        $existingLike = Interaction::where('user_id', $user->id)
-            ->where('interactionable_id', $post->id)
-            ->where('interactionable_type', Post::class)
-            ->where('type', 'like')
-            ->first();
+        $existingLike = Interaction::where([
+            'user_id' => $user->id,
+            'interactionable_id' => $post->id,
+            'interactionable_type' => Post::class,
+            'type' => 'like',
+        ])->first();
 
         if ($existingLike) {
             $existingLike->delete();
+
+            Notification::where([
+                'user_id' => $post->user_id,
+                'from_user_id' => $user->id,
+                'type' => 'like',
+                'notifiable_type' => Post::class,
+                'notifiable_id' => $post->id,
+            ])->delete();
+
             $message = 'Post Like Removed';
         } else {
             Interaction::create([
@@ -81,13 +91,33 @@ class UserController extends Controller
                 'interactionable_type' => Post::class,
                 'type' => 'like',
             ]);
+
+            $existingNotification = Notification::where([
+                'user_id' => $post->user_id,
+                'from_user_id' => $user->id,
+                'type' => 'like',
+                'notifiable_type' => Post::class,
+                'notifiable_id' => $post->id,
+            ])->first();
+
+            if (!$existingNotification) {
+                Notification::create([
+                    'user_id' => $post->user_id,
+                    'from_user_id' => $user->id,
+                    'type' => 'like',
+                    'notifiable_type' => Post::class,
+                    'notifiable_id' => $post->id,
+                ]);
+            }
+
             $message = 'Post liked';
         }
 
-        $likesCount = Interaction::where('interactionable_id', $post->id)
-            ->where('interactionable_type', Post::class)
-            ->where('type', 'like')
-            ->count();
+        $likesCount = Interaction::where([
+            'interactionable_id' => $post->id,
+            'interactionable_type' => Post::class,
+            'type' => 'like',
+        ])->count();
 
         return response()->json([
             'message' => $message,
@@ -102,11 +132,36 @@ class UserController extends Controller
             'content' => 'required|string',
         ]);
 
+        $user = Auth::user();
+        $post = Post::find($request->post_id);
+
+        if (!$post) {
+            return response()->json(['message' => 'Post not found'], 404);
+        }
+
         $comment = Comment::create([
-            'user_id' => Auth::id(),
-            'post_id' => $request->post_id,
+            'user_id' => $user->id,
+            'post_id' => $post->id,
             'content' => $request->content,
         ]);
+
+        $existingNotification = Notification::where([
+            'user_id' => $post->user_id,
+            'from_user_id' => $user->id,
+            'type' => 'comment',
+            'notifiable_type' => Post::class,
+            'notifiable_id' => $post->id,
+        ])->first();
+
+        if (!$existingNotification) {
+            Notification::create([
+                'user_id' => $post->user_id,
+                'from_user_id' => $user->id,
+                'type' => 'comment',
+                'notifiable_type' => Post::class,
+                'notifiable_id' => $post->id,
+            ]);
+        }
 
         return response()->json(['message' => 'Comment added', 'comment' => $comment]);
     }
@@ -198,6 +253,7 @@ class UserController extends Controller
                     'created_at' => $post->created_at,
                     'user' => [
                         'id' => $post->user->id,
+                        'name' => $post->user->name,
                         'username' => $post->user->username,
                     ],
                     'tags' => $post->tags->pluck('name'),
@@ -244,20 +300,59 @@ class UserController extends Controller
 
     public function getNotifications()
     {
-        $user = Auth::user();
-
+        $user = auth()->user();
         $notifications = Notification::where('user_id', $user->id)
-            ->where('read', false)
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->get()
+            ->map(function ($notification) {
+                $fromUser = User::find($notification->from_user_id);
+
+                return [
+                    'id' => $notification->id,
+                    'user_id' => $notification->user_id,
+                    'from_user_id' => $notification->from_user_id,
+                    'from_user_name' => $fromUser ? $fromUser->name : 'Unknown User', // Get the user's name
+                    'type' => $notification->type,
+                    'notifiable_type' => $notification->notifiable_type,
+                    'notifiable_id' => $notification->notifiable_id,
+                    'message' => $this->formatNotificationMessage($notification, $fromUser),
+                    'created_at' => $notification->created_at,
+                ];
+            });
 
         return response()->json($notifications);
+    }
+
+    private function formatNotificationMessage($notification, $fromUser)
+    {
+        $name = $fromUser ? $fromUser->name : 'Unknown User';
+
+        switch ($notification->type) {
+            case 'follow':
+                return "{$name} followed you";
+            case 'like':
+                return "{$name} liked your post";
+            case 'comment':
+                return "{$name} commented on your post";
+            default:
+                return 'You have a new notification';
+        }
+    }
+
+    public function deleteNotification($id)
+    {
+        $notification = Notification::where('id', $id)->where('user_id', auth()->id())->first();
+        if ($notification) {
+            $notification->delete();
+            return response()->json(['message' => 'Notification removed']);
+        }
+
+        return response()->json(['message' => 'Notification not found'], 404);
     }
 
     public function toggleFollow(Request $request)
     {
         $authUser = Auth::user();
-
         $userId = $request->input('user_id');
 
         if ($authUser->id == $userId) {
@@ -273,7 +368,16 @@ class UserController extends Controller
 
         if ($existingFollow) {
             $existingFollow->delete();
-            return response()->json(['message' => 'Unfollowed successfully']);
+
+            Notification::where([
+                'user_id' => $userId,
+                'from_user_id' => $authUser->id,
+                'type' => 'follow',
+                'notifiable_type' => User::class,
+                'notifiable_id' => $userId,
+            ])->delete();
+
+            return response()->json(['message' => 'Unfollowed successfully', 'isFollowed' => false]);
         }
 
         Interaction::create([
@@ -283,13 +387,23 @@ class UserController extends Controller
             'type' => 'follow',
         ]);
 
-        Notification::create([
+        $existingNotification = Notification::where([
             'user_id' => $userId,
             'from_user_id' => $authUser->id,
             'type' => 'follow',
             'notifiable_type' => User::class,
             'notifiable_id' => $userId,
-        ]);
+        ])->first();
+
+        if (!$existingNotification) {
+            Notification::create([
+                'user_id' => $userId,
+                'from_user_id' => $authUser->id,
+                'type' => 'follow',
+                'notifiable_type' => User::class,
+                'notifiable_id' => $userId,
+            ]);
+        }
 
         return response()->json(['message' => 'Followed successfully', 'isFollowed' => true]);
     }
@@ -315,6 +429,7 @@ class UserController extends Controller
                     'created_at' => $post->created_at,
                     'user' => [
                         'id' => $post->user->id,
+                        'name' => $post->user->name,
                         'username' => $post->user->username,
                     ],
                     'tags' => $post->tags->pluck('name'),

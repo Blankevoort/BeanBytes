@@ -29,6 +29,17 @@ const routes = [
     },
   },
   {
+    path: '/notifications',
+    component: () => import('layouts/MainLayout.vue'),
+    children: [
+      { path: '', component: () => import('pages/NotificationsPage.vue') }
+    ],
+
+    meta: {
+      requireAuth: true,
+    },
+  },
+  {
     path: '/settings/account',
     component: () => import('layouts/MainLayout.vue'),
     children: [

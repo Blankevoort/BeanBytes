@@ -23,6 +23,8 @@ Route::middleware('auth:sanctum')->group(function () {
         return $request->user();
     });
     Route::post('/user/follow', [UserController::class, 'toggleFollow']);
+    Route::get('/notifications', [UserController::class, 'getNotifications']);
+    Route::delete('/notifications/{id}', [UserController::class, 'deleteNotification']);
 
     Route::get('/user/bookmarks', [UserController::class, 'userBookmarks']);
     Route::put('/user/update', [UserController::class, 'updateUser']);

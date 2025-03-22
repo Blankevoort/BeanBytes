@@ -37,7 +37,7 @@
 
           <q-separator color="grey-9" class="q-my-sm" />
 
-          <q-item clickable disable v-ripple to="/notifications">
+          <q-item clickable v-ripple to="/notifications">
             <q-item-section avatar><q-icon name="notifications" /></q-item-section>
             <q-item-section>Notifications</q-item-section>
 
@@ -75,14 +75,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
-import { api } from 'src/boot/axios'
+import { useAuthStore } from 'src/stores/auth'
 
 const $q = useQuasar()
 const router = useRouter()
-const user = ref(null)
+const authStore = useAuthStore()
+
+const user = computed(() => authStore.user)
 
 const darkMode = ref(localStorage.getItem('darkMode') === 'true')
 $q.dark.set(darkMode.value)
@@ -108,16 +110,9 @@ const handleSettingsClick = () => {
   }
 }
 
-const fetchUser = async () => {
-  try {
-    const { data } = await api.get('/api/user')
-    user.value = data
-  } catch (error) {
-    console.error('Error fetching user:', error)
-  }
-}
-
-onMounted(fetchUser)
+onMounted(() => {
+  authStore.fetchUser()
+})
 </script>
 
 <style>
