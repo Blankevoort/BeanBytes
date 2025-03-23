@@ -217,6 +217,7 @@ const postShareLink = ref('')
 const commentDialog = ref(false)
 const comments = ref([])
 const router = useRouter()
+const emit = defineEmits(['update-follow-status'])
 
 const props = defineProps({
   post: Object,
@@ -226,9 +227,13 @@ const localPost = reactive({
   ...props.post,
 })
 
-watch(() => props.post, (newPost) => {
-  Object.assign(localPost, newPost)
-}, { deep: true })
+watch(
+  () => props.post,
+  (newPost) => {
+    Object.assign(localPost, newPost)
+  },
+  { deep: true },
+)
 
 const fixedAssets = computed(() => {
   return props.post.assets.map((asset) => {
@@ -276,8 +281,6 @@ function savePost(postId) {
       console.error('Error saving post:', error.response.data)
     })
 }
-
-const emit = defineEmits(['update-follow-status'])
 
 const toggleFollow = async (userId) => {
   try {

@@ -12,7 +12,6 @@ return new class extends Migration {
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->morphs('interactionable');
             $table->string('type');
-            $table->foreignId('shared_post_id')->nullable()->constrained('posts')->nullOnDelete();
             $table->timestamps();
         });
     }

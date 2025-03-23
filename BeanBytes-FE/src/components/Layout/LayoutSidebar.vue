@@ -37,13 +37,9 @@
 
           <q-separator color="grey-9" class="q-my-sm" />
 
-          <q-item clickable v-ripple to="/notifications">
+          <q-item clickable v-ripple @click="handleNotificationClick">
             <q-item-section avatar><q-icon name="notifications" /></q-item-section>
             <q-item-section>Notifications</q-item-section>
-
-            <div>
-              <q-badge color="grey" label="3" rounded />
-            </div>
           </q-item>
 
           <q-item clickable v-ripple @click="handleSettingsClick">
@@ -105,6 +101,14 @@ const handleBookmarksClick = () => {
 const handleSettingsClick = () => {
   if (!user.value) {
     router.push('/account')
+  } else {
+    router.push('/settings/account')
+  }
+}
+
+const handleNotificationClick = () => {
+  if (!user.value) {
+    router.push('/notifications')
   } else {
     router.push('/settings/account')
   }

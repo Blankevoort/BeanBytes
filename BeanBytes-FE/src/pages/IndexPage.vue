@@ -27,6 +27,16 @@
         <!-- Tabs -->
 
         <div class="row q-ml-sm">
+          <div class="flex items-center cursor-pointer q-mr-lg" @click="postsTabs = 'posts'">
+            <q-icon
+              size="24px"
+              name="sym_o_receipt_long"
+              :color="postsTabs == 'posts' ? 'primary' : ''"
+            />
+
+            <span class="q-pl-sm">All Posts</span>
+          </div>
+
           <div class="flex items-center cursor-pointer" @click="postsTabs = 'following'">
             <q-icon size="24px" name="favorite" :color="postsTabs == 'following' ? 'red' : ''" />
 
@@ -51,16 +61,6 @@
             />
 
             <span class="q-pl-sm">Trends</span>
-          </div>
-
-          <div class="flex items-center cursor-pointer q-ml-lg" @click="postsTabs = 'posts'">
-            <q-icon
-              size="24px"
-              name="sym_o_receipt_long"
-              :color="postsTabs == 'posts' ? 'primary' : ''"
-            />
-
-            <span class="q-pl-sm">All Posts</span>
           </div>
         </div>
 
