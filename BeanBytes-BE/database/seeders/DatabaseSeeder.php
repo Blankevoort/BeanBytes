@@ -27,5 +27,10 @@ class DatabaseSeeder extends Seeder
             'phone' => '09119669692',
             'password' => Hash::make('Moeen576786'),
         ]);
+
+        $this->call([
+            SkillSeeder::class,
+            JobRequestSeeder::class,
+        ]);
     }
 }

@@ -14,6 +14,7 @@ class Interaction extends Model
         'interactionable_id',
         'interactionable_type',
         'type',
+        'status',
     ];
 
     public function user()

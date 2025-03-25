@@ -16,6 +16,11 @@
             <q-item-section>Feed</q-item-section>
           </q-item>
 
+          <q-item clickable v-ripple to="/requests">
+            <q-item-section avatar><q-icon name="work" /></q-item-section>
+            <q-item-section>Requests</q-item-section>
+          </q-item>
+
           <q-item clickable disable v-ripple to="/groups">
             <q-item-section avatar><q-icon name="groups" /></q-item-section>
             <q-item-section>Groups</q-item-section>

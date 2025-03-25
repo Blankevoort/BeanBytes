@@ -26,6 +26,7 @@ class AppServiceProvider extends ServiceProvider
             'post' => \App\Models\Post::class,
             'asset' => \App\Models\Asset::class,
             'profile' => \App\Models\Profile::class,
+            'job_request' => \App\Models\JobRequest::class,
         ]);
     }
 }

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\JobRequestController;
 
 Route::controller(AuthController::class)->group(function () {
     Route::post('check', 'checkStatus');
@@ -25,6 +26,8 @@ Route::get('/get-posts', [PostController::class, 'getAllPosts']);
 Route::get('/get-post/{id}', [PostController::class, 'getPost']);
 Route::get('/search/{value?}', [PostController::class, 'search']);
 Route::get('/user/{name}', [UserController::class, 'getUserAndPosts']);
+Route::get('/job-requests', [JobRequestController::class, 'index']);
+Route::get('/job-requests/{id}', [JobRequestController::class, 'show']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
@@ -47,4 +50,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/add-post', [PostController::class, 'createPost']);
     Route::put('/edit-post/{post}', [PostController::class, 'editPost']);
     Route::delete('/delete-post/{post}', [PostController::class, 'deletePost']);
+
+    Route::post('/job-requests', [JobRequestController::class, 'store']);
+    Route::put('/job-requests/{jobRequest}', [JobRequestController::class, 'update']);
+    Route::delete('/job-requests/{jobRequest}', [JobRequestController::class, 'destroy']);
+
+    Route::post('/job-requests/{id}/apply', [JobRequestController::class, 'apply']);
+    Route::post('/job-requests/{jobRequestId}/accept/{interactionId}', [JobRequestController::class, 'acceptApplicant']);
+    Route::post('/job-requests/{jobRequestId}/reject/{interactionId}', [JobRequestController::class, 'rejectApplicant']);
 });

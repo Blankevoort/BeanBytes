@@ -7,6 +7,13 @@ const routes = [
     ]
   },
   {
+    path: '/requests',
+    component: () => import('layouts/MainLayout.vue'),
+    children: [
+      { path: '', component: () => import('pages/JobRequestsPage.vue') }
+    ]
+  },
+  {
     path: '/account',
     component: () => import('layouts/BlankLayout.vue'),
     children: [
