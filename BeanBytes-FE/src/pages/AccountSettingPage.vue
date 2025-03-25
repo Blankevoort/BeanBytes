@@ -1,12 +1,16 @@
 <template>
   <q-page class="bg-dark row justify-center">
     <div class="text-grey-6 col-sm-10 col-md-10 col-lg-8 col-xl-8">
-      <div class="text-bold q-py-md q-px-sm" style="font-size: 24px">Account</div>
+      <div class="text-center q-my-md">
+        <q-avatar size="125px" v-if="profileImagePreview">
+          <img :src="profileImagePreview" />
+        </q-avatar>
+      </div>
 
       <q-form @submit="updateUser">
         <div class="row">
           <div class="col-xs-12 col-sm-12 col-md-6 col-lg-6 col-xl-6 q-pa-sm">
-            <q-input class="form-inputs" placeholder="name" v-model="name" />
+            <q-input class="form-inputs" placeholder="Full Name" v-model="name" />
           </div>
 
           <div class="col-xs-12 col-sm-12 col-md-6 col-lg-6 col-xl-6 q-pa-sm">
@@ -24,11 +28,31 @@
           <div class="col-xs-12 col-sm-12 col-md-6 col-lg-6 col-xl-6 q-pa-sm">
             <q-input class="form-inputs" placeholder="Job Title" v-model="jobTitle" />
           </div>
+
+          <div class="col-xs-12 col-sm-12 col-md-6 col-lg-6 col-xl-6 q-pa-sm">
+            <q-input class="form-inputs" placeholder="Location" v-model="location" />
+          </div>
+
+          <div class="col-12 q-pa-sm">
+            <q-input class="form-inputs" type="textarea" placeholder="Bio" v-model="bio" rows="3" />
+          </div>
+
+          <div class="col-12 q-pa-sm">
+            <q-file
+              class="form-inputs"
+              v-model="profileImage"
+              label="Upload Profile Image"
+              accept="image/*"
+            >
+              <template v-slot:prepend>
+                <q-icon name="cloud_upload" />
+              </template>
+            </q-file>
+          </div>
         </div>
 
         <div class="col-12 q-px-sm q-gutter-x-md q-py-md">
-          <q-btn class="cart-btn" label="submit" type="submit" />
-
+          <q-btn class="cart-btn" label="Submit" type="submit" />
           <q-btn label="Reset" type="reset" />
         </div>
       </q-form>
@@ -37,7 +61,7 @@
 </template>
 
 <script setup>
-import { ref, watchEffect } from 'vue'
+import { ref, watchEffect, computed } from 'vue'
 import { api } from 'src/boot/axios'
 import { useErrorHandling } from 'src/composables/useErrorHandling'
 import { useAuthStore } from 'src/stores/auth'
@@ -50,6 +74,21 @@ const username = ref('')
 const phone = ref('')
 const email = ref('')
 const jobTitle = ref('')
+const bio = ref('')
+const location = ref('')
+const profileImage = ref(null)
+
+const profileImagePreview = computed(() => {
+  const imagePath = authStore.user?.profile?.profile_image?.path
+
+  if (imagePath) {
+    return imagePath.startsWith('http')
+      ? imagePath
+      : `http://127.0.0.1:8000/storage/${imagePath.replace(/\\/g, '/')}`
+  }
+
+  return 'path/to/default/profile-image.png'
+})
 
 watchEffect(() => {
   if (authStore.user) {
@@ -57,21 +96,41 @@ watchEffect(() => {
     username.value = authStore.user.username
     phone.value = authStore.user.phone
     email.value = authStore.user.email
-    jobTitle.value = authStore.user.jobTitle
+    jobTitle.value = authStore.user.profile?.job_title || ''
+    bio.value = authStore.user.profile?.bio || ''
+    location.value = authStore.user.profile?.location || ''
   }
 })
 
 async function updateUser() {
   try {
-    const { data } = await api.put('api/user/update', {
-      name: name.value,
-      username: username.value,
-      phone: phone.value,
-      email: email.value,
-      jobTitle: jobTitle.value,
+    const formData = new FormData()
+    formData.append('name', name.value)
+    formData.append('username', username.value)
+    formData.append('phone', phone.value)
+    formData.append('email', email.value)
+    formData.append('job_title', jobTitle.value)
+    formData.append('bio', bio.value)
+    formData.append('location', location.value)
+
+    if (profileImage.value) {
+      formData.append('profile_image', profileImage.value)
+    }
+
+    const { data } = await api.post('/api/user/update', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
     })
 
     authStore.setUser(data.user)
+
+    if (data.profile_image) {
+      authStore.user.profile.profile_image = {
+        ...authStore.user.profile.profile_image,
+        path: data.profile_image.startsWith('http')
+          ? data.profile_image
+          : `http://127.0.0.1:8000/storage/${data.profile_image.replace(/\\/g, '/')}`,
+      }
+    }
   } catch (err) {
     handleApiError(err)
   }
@@ -79,7 +138,8 @@ async function updateUser() {
 </script>
 
 <style>
-.form-inputs input {
+.form-inputs input,
+.form-inputs textarea {
   width: 100%;
   background-color: #2a2a2a;
   padding: 0.75rem;
@@ -88,11 +148,13 @@ async function updateUser() {
   resize: vertical;
 }
 
-.form-inputs input::placeholder {
+.form-inputs input::placeholder,
+.form-inputs textarea::placeholder {
   color: #888;
 }
 
-.form-inputs input:focus {
+.form-inputs input:focus,
+.form-inputs textarea:focus {
   outline: 2px solid #555;
 }
 </style>

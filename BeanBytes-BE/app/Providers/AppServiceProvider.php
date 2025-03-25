@@ -25,6 +25,7 @@ class AppServiceProvider extends ServiceProvider
             'interaction' => \App\Models\Interaction::class,
             'post' => \App\Models\Post::class,
             'asset' => \App\Models\Asset::class,
+            'profile' => \App\Models\Profile::class,
         ]);
     }
 }

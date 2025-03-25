@@ -195,7 +195,6 @@ const fetchPosts = async () => {
       posts.value = []
       return
     }
-    console.log(response)
 
     posts.value = response.data
   } catch (error) {
@@ -203,12 +202,16 @@ const fetchPosts = async () => {
   }
 }
 
-const updateFollowStatus = ({ userId, isFollowed }) => {
-  posts.value.forEach((post) => {
-    if (post.user.id === userId) {
-      post.isFollowed = isFollowed
-    }
-  })
+const updateFollowStatus = async ({ userId }) => {
+  try {
+    const response = await api.post('/api/user/follow', { user_id: userId })
+    const updatedFollowState = response.data.isFollowed
+    posts.value = posts.value.map((post) =>
+      post.user.id === userId ? { ...post, isFollowed: updatedFollowState } : post,
+    )
+  } catch (error) {
+    console.error('Error updating follow status:', error)
+  }
 }
 
 async function addPost() {

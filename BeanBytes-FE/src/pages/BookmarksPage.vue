@@ -29,7 +29,7 @@ export default {
 
     async function fetchPosts() {
       try {
-        const r = await api.get('/api/user/bookmarks')
+        const r = await api.get('/api/bookmarked-posts')
         posts.value = r.data
       } catch (error) {
         console.error('Error fetching posts:', error)

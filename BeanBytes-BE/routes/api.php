@@ -1,6 +1,11 @@
 <?php
 
+use App\Models\Post;
+use App\Models\User;
+use App\Models\Asset;
+use App\Models\Interaction;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PostController;
@@ -19,17 +24,20 @@ Route::get('/posts/trending', [PostController::class, 'getTrendingPosts']);
 Route::get('/get-posts', [PostController::class, 'getAllPosts']);
 Route::get('/get-post/{id}', [PostController::class, 'getPost']);
 Route::get('/search/{value?}', [PostController::class, 'search']);
+Route::get('/user/{name}', [UserController::class, 'getUserAndPosts']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
-        return $request->user();
+        return response()->json([
+            'user' => $request->user()->load('profile.profileImage')
+        ]);
     });
     Route::post('/user/follow', [UserController::class, 'toggleFollow']);
     Route::get('/notifications', [UserController::class, 'getNotifications']);
     Route::delete('/notifications/{id}', [UserController::class, 'deleteNotification']);
 
-    Route::get('/user/bookmarks', [UserController::class, 'userBookmarks']);
-    Route::put('/user/update', [UserController::class, 'updateUser']);
+    Route::post('/user/update', [UserController::class, 'updateUser']);
+    Route::get('/bookmarked-posts', [UserController::class, 'userBookmarks']);
     Route::post('/post/save', [UserController::class, 'savePost']);
     Route::post('/add-post/like', [UserController::class, 'addLike']);
     Route::post('/add-post/comment', [UserController::class, 'addComment']);

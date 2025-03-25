@@ -14,7 +14,7 @@ export const useAuthStore = defineStore('auth', {
 
       try {
         const { data } = await api.get('/api/user')
-        this.user = data
+        this.user = data.user
       } catch (error) {
         console.error('Error fetching user:', error)
       } finally {

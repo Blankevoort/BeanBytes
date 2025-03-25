@@ -1,5 +1,5 @@
 <template>
-  <div class="q-pa-md q-ml-sm q-my-md post-container">
+  <div class="q-pa-md q-my-md post-container">
     <!-- User Info -->
 
     <div class="row justify-between">
@@ -19,7 +19,7 @@
               flat
               dense
               no-caps
-              @click="toggleFollow(localPost.user.id)"
+              @click="toggleFollow"
             />
           </p>
 
@@ -28,10 +28,10 @@
       </div>
 
       <q-icon
-        :name="post.isBookmarked ? 'bookmark' : 'sym_o_bookmark'"
+        :name="localPost.isBookmarked ? 'bookmark' : 'sym_o_bookmark'"
         size="24px"
         class="cursor-pointer"
-        @click="savePost(post.id)"
+        @click="savePost(localPost.id)"
       />
     </div>
 
@@ -199,7 +199,6 @@ import { computed, defineProps, ref, onMounted, reactive, watch } from 'vue'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import { api } from 'src/boot/axios'
-
 import { useAuthStore } from 'src/stores/auth'
 import 'highlight.js/styles/github-dark.min.css'
 import hljs from 'highlight.js'
@@ -217,7 +216,8 @@ const postShareLink = ref('')
 const commentDialog = ref(false)
 const comments = ref([])
 const router = useRouter()
-const emit = defineEmits(['update-follow-status'])
+
+const emit = defineEmits(['updateFollowStatus'])
 
 const props = defineProps({
   post: Object,
@@ -267,35 +267,28 @@ function formatDate(date) {
   return diffInDays < 30 ? `${diffInDays} days ago` : new Date(date).toLocaleDateString()
 }
 
-function savePost(postId) {
-  const postData = new FormData()
-  postData.append('post_id', postId)
-
-  api
-    .post('/api/post/save', postData)
-    .then((response) => {
-      window.location.reload()
-      console.log('Post saved successfully:', response.data)
-    })
-    .catch((error) => {
-      console.error('Error saving post:', error.response.data)
-    })
+const toggleFollow = () => {
+  emit('updateFollowStatus', {
+    userId: localPost.user.id,
+  })
 }
 
-const toggleFollow = async (userId) => {
+const savePost = async (postId) => {
   try {
-    const response = await api.post('/api/user/follow', { user_id: userId })
-    const isFollowed = response.data.isFollowed ?? false
+    const response = await api.post('/api/post/save', { post_id: postId })
 
-    emit('update-follow-status', { userId, isFollowed })
+    localPost.isBookmarked = response.data.is_bookmarked
 
     $q.notify({
       message: response.data.message,
-      color: isFollowed ? 'positive' : 'negative',
+      color: response.data.is_bookmarked ? 'positive' : 'negative',
     })
   } catch (error) {
-    console.error('Follow error:', error.response?.data || error.message)
-    $q.notify({ message: 'Failed to update follow status', color: 'negative' })
+    console.error('Error saving post:', error)
+    $q.notify({
+      message: 'Failed to save post',
+      color: 'negative',
+    })
   }
 }
 

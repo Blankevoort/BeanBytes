@@ -2,7 +2,7 @@
   <q-page class="bg-dark row justify-center">
     <div class="text-grey-6 col-sm-10 col-md-10 col-lg-8 col-xl-8">
       <q-list separator>
-        <q-item-label header class="text-h6 text-white">Notifications</q-item-label>
+        <q-item-label class="text-h6 text-white q-py-md">Notifications</q-item-label>
 
         <q-item v-if="isLoading">
           <q-item-section class="text-grey">Loading...</q-item-section>

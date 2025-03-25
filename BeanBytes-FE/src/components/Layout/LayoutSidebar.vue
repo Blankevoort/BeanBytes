@@ -108,9 +108,9 @@ const handleSettingsClick = () => {
 
 const handleNotificationClick = () => {
   if (!user.value) {
-    router.push('/notifications')
+    router.push('/account')
   } else {
-    router.push('/settings/account')
+    router.push('/notifications')
   }
 }
 

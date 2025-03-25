@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Profile;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,7 +12,7 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable, HasApiTokens;
 
-    protected $fillable = ['name', 'username', 'email', 'phone', 'jobTitle', 'password'];
+    protected $fillable = ['name', 'username', 'email', 'phone', 'password'];
 
     protected static function boot()
     {
@@ -22,22 +23,16 @@ class User extends Authenticatable
 
             $user->name = $user->name ?? "User{$randomNumber} Name";
             $user->username = $user->username ?? "User{$randomNumber} Username";
-            $user->jobTitle = $user->jobTitle ?? "User{$randomNumber} jobTitle";
         });
     }
 
-    // public function image()
-    // {
-    //     return $this->morphOne(Image::class, 'imageable');
-    // }
+    public function profile()
+    {
+        return $this->hasOne(Profile::class);
+    }
 
     public function interactions()
     {
         return $this->hasMany(Interaction::class);
     }
-
-    // public function comments()
-    // {
-    //     return $this->hasMany(Comment::class);
-    // }
 }

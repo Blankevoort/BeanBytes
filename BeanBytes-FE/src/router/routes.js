@@ -40,6 +40,17 @@ const routes = [
     },
   },
   {
+    path: '/user/:name',
+    component: () => import('layouts/MainLayout.vue'),
+    children: [
+      { path: '', component: () => import('pages/UserPagePage.vue') }
+    ],
+
+    meta: {
+      requireAuth: true,
+    },
+  },
+  {
     path: '/settings/account',
     component: () => import('layouts/MainLayout.vue'),
     children: [

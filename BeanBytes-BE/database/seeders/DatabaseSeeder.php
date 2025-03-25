@@ -15,7 +15,6 @@ class DatabaseSeeder extends Seeder
         User::create([
             'name' => 'Moein_Sedaqati',
             'username' => 'Moein',
-            'jobTitle' => 'Website Developer',
             'email' => 'moeensedaghaty86@gmail.com',
             'phone' => '09379608155',
             'password' => Hash::make('Moeen576786'),
@@ -24,7 +23,6 @@ class DatabaseSeeder extends Seeder
         User::create([
             'name' => 'aylar_jorjany',
             'username' => 'Aylar',
-            'jobTitle' => 'Tailor',
             'email' => 'moeensedaghaty71@gmail.com',
             'phone' => '09119669692',
             'password' => Hash::make('Moeen576786'),

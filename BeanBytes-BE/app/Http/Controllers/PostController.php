@@ -19,7 +19,7 @@ class PostController extends Controller
         $user = Auth::guard('sanctum')->user();
 
         $posts = Post::with([
-            'user:id,username',
+            'user:id,username,name',
             'tags:id,name',
             'assets'
         ])
@@ -59,7 +59,7 @@ class PostController extends Controller
                         ->exists() : false,
                     'isBookmarked' => $user ? Interaction::where('user_id', $user->id)
                         ->where('interactionable_id', $post->id)
-                        ->where('interactionable_type', Post::class)
+                        ->where('interactionable_type', 'post')
                         ->where('type', 'bookmark')
                         ->exists() : false,
                     'isFollowed' => $user ? Interaction::where('user_id', $user->id)
@@ -111,7 +111,7 @@ class PostController extends Controller
             'user_id' => Auth::id(),
             'content' => $cleanContent,
             'fullCode' => $fullCode,
-            'visibility' => $request->input('visibility', 'private'),
+            'visibility' => $request->input('visibility', 'public'),
         ]);
 
         if (!empty($allTags)) {
@@ -197,7 +197,7 @@ class PostController extends Controller
         $user = Auth::guard('sanctum')->user();
 
         $post = Post::with([
-            'user:id,username',
+            'user:id,username,name',
             'tags:id,name',
             'assets'
         ])
@@ -319,7 +319,7 @@ class PostController extends Controller
         ])->pluck('interactionable_id');
 
         $posts = Post::with([
-            'user:id,username',
+            'user:id,username,name',
             'tags:id,name',
             'assets'
         ])
@@ -337,7 +337,7 @@ class PostController extends Controller
         $user = Auth::guard('sanctum')->user();
 
         $posts = Post::with([
-            'user:id,username',
+            'user:id,username,name',
             'tags:id,name',
             'assets'
         ])
