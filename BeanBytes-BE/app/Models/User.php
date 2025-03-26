@@ -14,13 +14,16 @@ class User extends Authenticatable
 
     protected $fillable = ['name', 'username', 'email', 'phone', 'password'];
 
+    protected $hidden = [
+        'password', 'remember_token', 'email_verified_at', 'updated_at', 'created_at',
+    ];
+
     protected static function boot()
     {
         parent::boot();
 
         static::creating(function ($user) {
             $randomNumber = rand(10000, 99999);
-
             $user->name = $user->name ?? "User{$randomNumber} Name";
             $user->username = $user->username ?? "User{$randomNumber} Username";
         });

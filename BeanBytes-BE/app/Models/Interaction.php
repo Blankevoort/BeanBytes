@@ -22,11 +22,6 @@ class Interaction extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function toUser()
-    {
-        return $this->belongsTo(User::class, 'to_user_id');
-    }
-
     public function interactionable()
     {
         return $this->morphTo();

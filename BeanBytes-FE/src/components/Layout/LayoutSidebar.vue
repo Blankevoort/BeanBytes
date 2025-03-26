@@ -26,14 +26,14 @@
             <q-item-section>Groups</q-item-section>
           </q-item>
 
-          <q-item clickable disable v-ripple to="/messages">
+          <!-- <q-item clickable disable v-ripple to="/messages">
             <q-item-section avatar><q-icon name="message" /></q-item-section>
             <q-item-section>Messages</q-item-section>
 
             <div>
               <q-badge color="orange" label="1" rounded />
             </div>
-          </q-item>
+          </q-item> -->
 
           <q-item clickable v-ripple @click="handleBookmarksClick">
             <q-item-section avatar><q-icon name="bookmark" /></q-item-section>

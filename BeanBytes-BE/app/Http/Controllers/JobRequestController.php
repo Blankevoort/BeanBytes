@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Models\JobRequest;
 use App\Models\Interaction;
 use Illuminate\Http\Request;
@@ -28,6 +29,40 @@ class JobRequestController extends Controller
         }
 
         return response()->json($query->paginate(10));
+    }
+
+    public function getJobRequests(Request $request)
+    {
+        $authUser = auth()->user();
+
+        $query = JobRequest::with([
+            'user.profile.profileImage',
+            'skills',
+        ]);
+
+        if ($request->filled('my_jobs') && $request->my_jobs == 1 && $authUser) {
+            $query->where('user_id', $authUser->id);
+        } elseif ($authUser) {
+            $query->where('user_id', '!=', $authUser->id);
+        }
+
+        $jobRequests = $query->get();
+
+        $jobIds = $jobRequests->pluck('id');
+
+        $applications = Interaction::where('interactionable_type', JobRequest::class)
+            ->whereIn('interactionable_id', $jobIds)
+            ->where('type', 'job_application')
+            ->with('user.profile.profileImage')
+            ->get();
+
+        $groupedApplications = $applications->groupBy('interactionable_id');
+
+        foreach ($jobRequests as $job) {
+            $job->applications = $groupedApplications->get($job->id, collect());
+        }
+
+        return response()->json($jobRequests);
     }
 
     public function store(Request $request)
@@ -100,6 +135,8 @@ class JobRequestController extends Controller
         return response()->json(['message' => 'Job request deleted.']);
     }
 
+    // Should send notifications on creation
+
     public function apply($id)
     {
         $jobRequest = JobRequest::findOrFail($id);
@@ -129,14 +166,18 @@ class JobRequestController extends Controller
     public function acceptApplicant($jobRequestId, $interactionId)
     {
         $jobRequest = JobRequest::findOrFail($jobRequestId);
-        if (auth()->id() !== $jobRequest->user_id) {
+        if (auth()->id() == $jobRequest->user_id) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
-        $interaction = Interaction::where('interactable_id', $jobRequestId)
-            ->where('interactable_type', JobRequest::class)
+        $interaction = Interaction::where('interactionable_id', $jobRequestId)
+            ->where('interactionable_type', JobRequest::class)
             ->where('id', $interactionId)
             ->firstOrFail();
+
+        if ($interaction->status == 'accepted') {
+            return response()->json(['message' => 'You have already accepted.'], 400);
+        }
 
         $interaction->update(['status' => 'accepted']);
 
@@ -146,14 +187,18 @@ class JobRequestController extends Controller
     public function rejectApplicant($jobRequestId, $interactionId)
     {
         $jobRequest = JobRequest::findOrFail($jobRequestId);
-        if (auth()->id() !== $jobRequest->user_id) {
+        if (auth()->id() == $jobRequest->user_id) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
-        $interaction = Interaction::where('interactable_id', $jobRequestId)
-            ->where('interactable_type', JobRequest::class)
+        $interaction = Interaction::where('interactionable_id', $jobRequestId)
+            ->where('interactionable_type', JobRequest::class)
             ->where('id', $interactionId)
             ->firstOrFail();
+
+        if ($interaction->status == 'rejected') {
+            return response()->json(['message' => 'You have already rejected.'], 400);
+        }
 
         $interaction->update(['status' => 'rejected']);
 

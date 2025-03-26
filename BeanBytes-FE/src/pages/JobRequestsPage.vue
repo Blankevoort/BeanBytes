@@ -3,49 +3,49 @@
     <div class="col-12 col-md-8 text-grey-6">
       <div class="q-py-md text-h6">Job Requests</div>
 
-      <q-list v-if="!loading && jobRequests.length">
-        <q-item v-for="job in jobRequests" :key="job.id" clickable @click="openJobDetail(job)">
-          <q-item-section>
-            <q-item-label class="text-h6">{{ job.title }}</q-item-label>
-            <q-item-label caption> {{ job.description.substring(0, 100) }}... </q-item-label>
-            <q-item-label caption>
-              <strong>Type:</strong> {{ job.type }} &nbsp;
+      <q-tabs
+        v-model="jobsTab"
+        active-color="primary"
+        indicator-color="primary"
+        class="q-mb-md"
+        no-caps
+      >
+        <q-tab name="allJobs" label="All Jobs" />
+        <q-tab name="myJobs" label="My Jobs" />
+      </q-tabs>
 
-              <strong>Status:</strong> {{ job.status }}
-            </q-item-label>
-          </q-item-section>
-          <q-item-section side>
-            <q-icon name="chevron_right" />
-          </q-item-section>
-        </q-item>
+      <q-list v-if="!loading && jobRequests.length">
+        <JobRequestCard
+          v-for="job in jobRequests"
+          :key="job.id"
+          :job="job"
+          :expandable="jobsTab === 'myJobs'"
+        />
       </q-list>
-      
+
       <div v-else-if="!loading" class="q-pa-md text-center text-grey">
         No job requests available.
       </div>
-      <q-spinner v-if="loading" color="primary" size="50px" />
 
-      <q-dialog v-model="jobDialog">
-        <JobRequestDetailDialog :job="selectedJob" @close="jobDialog = false" />
-      </q-dialog>
+      <q-spinner v-if="loading" color="primary" size="50px" />
     </div>
   </q-page>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, watchEffect } from 'vue'
 import { api } from 'src/boot/axios'
-import JobRequestDetailDialog from 'src/components/JobRequestDetailDialog.vue'
+import JobRequestCard from 'src/components/JobRequestCard.vue'
 
 const jobRequests = ref([])
 const loading = ref(false)
-const jobDialog = ref(false)
-const selectedJob = ref(null)
+const jobsTab = ref('allJobs')
 
 const fetchJobRequests = async () => {
   loading.value = true
   try {
-    const { data } = await api.get('/api/job-requests')
+    const endpoint = jobsTab.value === 'myJobs' ? '/api/my-job-requests/' : '/api/job-requests'
+    const { data } = await api.get(endpoint)
     jobRequests.value = data.data || data
   } catch (error) {
     console.error('Error fetching job requests:', error)
@@ -54,10 +54,5 @@ const fetchJobRequests = async () => {
   }
 }
 
-const openJobDetail = (job) => {
-  selectedJob.value = job
-  jobDialog.value = true
-}
-
-onMounted(fetchJobRequests)
+watchEffect(fetchJobRequests)
 </script>
