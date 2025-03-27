@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\JobRequest;
 use App\Models\Interaction;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -14,6 +15,11 @@ class JobRequestController extends Controller
     {
         $query = JobRequest::with('user', 'skills')
             ->where('status', '!=', 'closed');
+
+        $user = Auth::guard('sanctum')->user();
+        if ($user) {
+            $query->where('user_id', '=', $user->id);
+        }
 
         if ($request->filled('type')) {
             $query->where('type', $request->type);
@@ -135,8 +141,6 @@ class JobRequestController extends Controller
         return response()->json(['message' => 'Job request deleted.']);
     }
 
-    // Should send notifications on creation
-
     public function apply($id)
     {
         $jobRequest = JobRequest::findOrFail($id);
@@ -160,6 +164,15 @@ class JobRequestController extends Controller
             'type' => 'job_application',
         ]);
 
+        Notification::create([
+            'user_id' => $jobRequest->user_id,
+            'from_user_id' => $userId,
+            'notifiable_type' => JobRequest::class,
+            'notifiable_id' => $jobRequest->id,
+            'type' => 'job_application',
+            'read' => false,
+        ]);
+
         return response()->json(['message' => 'Application submitted.']);
     }
 
@@ -181,6 +194,26 @@ class JobRequestController extends Controller
 
         $interaction->update(['status' => 'accepted']);
 
+        $existingNotification = Notification::where([
+            'user_id' => $interaction->user_id,
+            'from_user_id' => auth()->id(),
+            'notifiable_type' => JobRequest::class,
+            'notifiable_id' => $jobRequest->id,
+        ])->first();
+
+        if ($existingNotification) {
+            $existingNotification->update(['type' => 'job_application_accepted']);
+        } else {
+            Notification::create([
+                'user_id' => $interaction->user_id,
+                'from_user_id' => auth()->id(),
+                'notifiable_type' => JobRequest::class,
+                'notifiable_id' => $jobRequest->id,
+                'type' => 'job_application_accepted',
+                'read' => false,
+            ]);
+        }
+
         return response()->json(['message' => 'Applicant accepted.']);
     }
 
@@ -201,6 +234,26 @@ class JobRequestController extends Controller
         }
 
         $interaction->update(['status' => 'rejected']);
+
+        $existingNotification = Notification::where([
+            'user_id' => $interaction->user_id,
+            'from_user_id' => auth()->id(),
+            'notifiable_type' => JobRequest::class,
+            'notifiable_id' => $jobRequest->id,
+        ])->first();
+
+        if ($existingNotification) {
+            $existingNotification->update(['type' => 'job_application_rejected']);
+        } else {
+            Notification::create([
+                'user_id' => $interaction->user_id,
+                'from_user_id' => auth()->id(),
+                'notifiable_type' => JobRequest::class,
+                'notifiable_id' => $jobRequest->id,
+                'type' => 'job_application_rejected',
+                'read' => false,
+            ]);
+        }
 
         return response()->json(['message' => 'Applicant rejected.']);
     }

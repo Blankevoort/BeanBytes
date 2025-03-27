@@ -341,7 +341,7 @@ class UserController extends Controller
                     'id' => $notification->id,
                     'user_id' => $notification->user_id,
                     'from_user_id' => $notification->from_user_id,
-                    'from_user_name' => $fromUser ? $fromUser->name : 'Unknown User', // Get the user's name
+                    'from_user_name' => $fromUser ? $fromUser->name : 'Unknown User',
                     'type' => $notification->type,
                     'notifiable_type' => $notification->notifiable_type,
                     'notifiable_id' => $notification->notifiable_id,
@@ -359,11 +359,17 @@ class UserController extends Controller
 
         switch ($notification->type) {
             case 'follow':
-                return "{$name} followed you";
+                return "{$name} Followed you";
             case 'like':
-                return "{$name} liked your post";
+                return "{$name} Liked your post";
             case 'comment':
-                return "{$name} commented on your post";
+                return "{$name} Commented on your post";
+            case 'job_application':
+                return "{$name} Applied to a job";
+            case 'job_application_accepted':
+                return "{$name} Accepted your application to a job";
+            case 'job_application_rejected':
+                return "{$name} Rejected your application to a job";
             default:
                 return 'You have a new notification';
         }
