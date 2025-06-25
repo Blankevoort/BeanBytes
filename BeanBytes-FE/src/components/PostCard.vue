@@ -217,7 +217,7 @@ const commentDialog = ref(false)
 const comments = ref([])
 const router = useRouter()
 
-const emit = defineEmits(['updateFollowStatus'])
+const emit = defineEmits(['bookmark-changed', 'updateFollowStatus'])
 
 const props = defineProps({
   post: Object,
@@ -276,19 +276,19 @@ const toggleFollow = () => {
 const savePost = async (postId) => {
   try {
     const response = await api.post('/api/post/save', { post_id: postId })
-
     localPost.isBookmarked = response.data.is_bookmarked
 
-    $q.notify({
-      message: response.data.message,
-      color: response.data.is_bookmarked ? 'positive' : 'negative',
+    if (response.data.is_bookmarked) {
+      $q.notify({ message: 'Post saved to bookmarks.', color: 'positive' })
+    }
+
+    emit('bookmark-changed', {
+      postId,
+      isBookmarked: response.data.is_bookmarked,
     })
   } catch (error) {
     console.error('Error saving post:', error)
-    $q.notify({
-      message: 'Failed to save post',
-      color: 'negative',
-    })
+    $q.notify({ message: 'Failed to save post', color: 'negative' })
   }
 }
 
@@ -362,7 +362,7 @@ async function addComment(postId) {
     localPost.comments_count++
     comments.value.unshift({
       id: response.data.comment.id,
-      content: newComment.value,
+      content: response.data.comment.content,
       user: response.data.comment.user,
     })
 
@@ -404,8 +404,7 @@ onMounted(() => {
 
 <style scoped>
 .post-container {
-  border: 2px solid grey;
-  border-radius: 4px;
+  border-bottom: 2px solid grey;
   padding: 16px;
   margin-right: 12px;
 }

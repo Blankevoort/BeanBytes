@@ -12,7 +12,6 @@ return new class extends Migration {
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->morphs('interactionable');
             $table->string('type');
-            $table->string('status')->nullable();
             $table->timestamps();
         });
     }

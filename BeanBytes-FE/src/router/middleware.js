@@ -27,6 +27,7 @@ export function checkAccess(to, from, next) {
           next('/access-denied')
         })
     } else {
+      // redirects to wrong path "http://localhost:9000/?redirect=/account" right path is http://localhost:9000/account
       next({
         path: '/account',
         query: {

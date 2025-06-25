@@ -1,6 +1,88 @@
 <template>
   <q-page class="bg-dark row justify-center">
-    <div class="text-grey-6 col-sm-10 col-md-10 col-lg-8 col-xl-8">
+    <div
+      class="text-grey-6 col-xs-12 col-sm-12 col-md-10 col-lg-8 col-xl-6 q-pa-sm"
+      :class="{ 'shadow-4': $q.screen.gt.sm }"
+    >
+      <div class="text-white bg-dark">
+        <q-toolbar>
+          <q-btn
+            v-if="$q.screen.lt.lg"
+            dense
+            flat
+            round
+            icon="menu"
+            @click="mergedDrawerOpen = !mergedDrawerOpen"
+          />
+
+          <div class="col relative-position">
+            <q-input
+              borderless
+              dark
+              input-class="text-grey-6"
+              v-model="searchInput"
+              placeholder="Search"
+              style="height: 55px"
+            >
+              <template v-slot:prepend>
+                <q-icon class="cursor-pointer" color="grey-6" name="search" />
+              </template>
+            </q-input>
+
+            <q-menu
+              v-model="isDropdownOpen"
+              auto-close
+              anchor="bottom left"
+              self="top left"
+              transition-show="scale"
+              transition-hide="scale"
+            >
+              <q-card class="bg-dark text-white q-pa-md" style="min-width: 250px">
+                <div v-if="users.length">
+                  <div class="text-bold text-grey-4">Users</div>
+                  <q-separator dark class="q-my-sm" />
+                  <q-list dense>
+                    <q-item
+                      clickable
+                      v-for="user in users"
+                      :key="'user-' + user"
+                      @click="goToUser(user.name)"
+                    >
+                      <q-item-section avatar>
+                        <q-icon name="person" color="blue" />
+                      </q-item-section>
+                      <q-item-section>
+                        <q-item-label>{{ user.username }}</q-item-label>
+                      </q-item-section>
+                    </q-item>
+                  </q-list>
+                </div>
+
+                <div v-if="tags.length">
+                  <div class="text-bold text-grey-4 q-mt-md">Tags</div>
+                  <q-separator dark class="q-my-sm" />
+                  <q-list dense>
+                    <q-item clickable v-for="tag in tags" :key="'tag-' + tag" @click="goToTag(tag)">
+                      <q-item-section avatar>
+                        <q-icon name="label" color="green" />
+                      </q-item-section>
+                      <q-item-section>
+                        <q-item-label>#{{ tag }}</q-item-label>
+                      </q-item-section>
+                    </q-item>
+                  </q-list>
+                </div>
+
+                <div v-if="users.length === 0 && tags.length === 0" class="text-center text-grey-5">
+                  No results found
+                </div>
+              </q-card>
+            </q-menu>
+          </div>
+        </q-toolbar>
+
+        <q-separator dark />
+      </div>
       <!-- Add new post -->
 
       <div class="q-pt-lg">
@@ -69,7 +151,7 @@
         <q-tab-panels v-model="postsTabs" animated>
           <q-tab-panel name="posts">
             <div v-if="posts.length === 0">
-              <p class="text-grey">No posts.</p>
+              <p class="text-grey">No posts</p>
             </div>
 
             <div v-else>
@@ -165,9 +247,10 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
-import { useQuasar } from 'quasar'
+import { onMounted, ref, watch } from 'vue'
+import { useQuasar, debounce } from 'quasar'
 import { api } from 'src/boot/axios'
+import { useRouter } from 'vue-router'
 
 import PostCard from 'src/components/PostCard.vue'
 
@@ -178,6 +261,33 @@ const $q = useQuasar()
 const showDialog = ref(false)
 const imageFile = ref(null)
 const imagePreview = ref(null)
+const router = useRouter()
+const searchInput = ref('')
+const users = ref([])
+const tags = ref([])
+const isDropdownOpen = ref(false)
+
+const fetchSearchResults = debounce(async () => {
+  if (!searchInput.value) {
+    users.value = []
+    tags.value = []
+    isDropdownOpen.value = false
+    return
+  }
+
+  try {
+    const { data } = await api.get(`/api/search/${searchInput.value}`)
+    users.value = data.user || []
+    tags.value = data.tag || []
+
+    isDropdownOpen.value = users.value.length > 0 || tags.value.length > 0
+  } catch (error) {
+    console.error('Search failed:', error)
+    isDropdownOpen.value = false
+  }
+}, 500)
+
+watch(searchInput, fetchSearchResults)
 
 const fetchPosts = async () => {
   posts.value = []
@@ -253,6 +363,14 @@ function previewImage(file) {
     }
     reader.readAsDataURL(file)
   }
+}
+
+const goToUser = (name) => {
+  router.push(`/user/${name}`)
+}
+
+const goToTag = (tag) => {
+  router.push(`/tag/${tag}`)
 }
 
 onMounted(fetchPosts)

@@ -181,6 +181,8 @@ class UserController extends Controller
             ]);
         }
 
+        $comment->load('user');
+
         return response()->json(['message' => 'Comment added', 'comment' => $comment]);
     }
 

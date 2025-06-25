@@ -1,14 +1,6 @@
 <template>
   <div class="sidebar-container">
     <div class="left-sidebar">
-      <div class="q-px-lg flex items-center" style="height: 55px">
-        <q-avatar class="cursor-pointer" @click="router.push('/')">
-          <img src="https://cdn.quasar.dev/logo-v2/svg/logo-mono-white.svg" />
-        </q-avatar>
-      </div>
-
-      <q-separator dark />
-
       <div class="sidebar-content">
         <q-list class="q-px-md">
           <q-item clickable v-ripple to="/">
@@ -18,7 +10,7 @@
 
           <q-item clickable v-ripple to="/requests">
             <q-item-section avatar><q-icon name="work" /></q-item-section>
-            <q-item-section>Requests</q-item-section>
+            <q-item-section>Job Requests</q-item-section>
           </q-item>
 
           <q-item clickable disable v-ripple to="/groups">
