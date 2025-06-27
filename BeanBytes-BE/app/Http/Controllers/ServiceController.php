@@ -40,18 +40,46 @@ class ServiceController extends Controller
     public function getServices(Request $request)
     {
         $authUser = Auth::guard('sanctum')->user();
-        $query = Service::with(['details', 'user.profile.profileImage']);
 
-        if ($request->filled('my_services') && $request->my_services == 1 && $authUser) {
-            $query->where('user_id', $authUser->id);
+        $query = Service::with([
+            'details',
+            'details.user.profile.profileImage',
+        ]);
+
+        if ($authUser && $request->boolean('my_services')) {
+            $query->whereHas('details', function ($q) use ($authUser) {
+                $q->where('user_id', $authUser->id);
+            });
         }
 
         if ($request->filled('type')) {
             $query->where('type', $request->type);
         }
 
-        $services = $query->paginate(10);
-        return response()->json($services);
+        return response()->json($query->paginate(10));
+    }
+
+    public function getUserServices(Request $request)
+    {
+
+        $authUser = Auth::guard('sanctum')->user();
+
+        $query = Service::with([
+            'details',
+            'details.user.profile.profileImage',
+        ]);
+
+        if ($authUser) {
+            $query->whereDoesntHave('details', function ($q) use ($authUser) {
+                $q->where('user_id', $authUser->id);
+            });
+        }
+
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+
+        return response()->json($query->paginate(10));
     }
 
     public function storeService(Request $request)
@@ -149,78 +177,80 @@ class ServiceController extends Controller
         return response()->json(['message' => 'Service deleted.']);
     }
 
-    public function apply($id)
+    public function apply($serviceId)
     {
-        $jobRequest = JobRequest::findOrFail($id);
-        $userId = Auth::id();
+        $service = Service::with('details')->findOrFail($serviceId);
+        $job = $service->details;
 
-        if ($jobRequest->status !== 'open') {
-            return response()->json(['message' => 'Job is no longer open for applications.'], 400);
+        if (! $job instanceof JobRequest) {
+            return response()->json(['message' => 'Not a job service'], 400);
         }
-
-        $jobRequest->update(['status' => 'in_progress']);
+        if ($job->applications()->where('user_id', Auth::id())->exists()) {
+            return response()->json(['message' => 'Already applied'], 400);
+        }
+        $job->interactions()->create([
+            'user_id' => Auth::id(),
+            'type' => 'job_application',
+        ]);
 
         Notification::create([
-            'user_id' => $jobRequest->user_id,
-            'from_user_id' => $userId,
+            'user_id' => $job->user_id,
+            'from_user_id' => Auth::id(),
             'notifiable_type' => JobRequest::class,
-            'notifiable_id' => $jobRequest->id,
+            'notifiable_id' => $job->id,
             'type' => 'job_application',
             'read' => false,
         ]);
-
-        return response()->json(['message' => 'Application submitted.']);
+        return response()->json(['message' => 'Application submitted'], 201);
     }
 
-    public function acceptApplicant($serviceId)
+    public function acceptApplicant($serviceId, $applicantId)
     {
-        $jobRequest = JobRequest::findOrFail($serviceId);
-
-        if (auth()->id() !== $jobRequest->user_id) {
+        $job = Service::findOrFail($serviceId)->details;
+        if (Auth::id() !== $job->user_id) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
-
-        if ($jobRequest->status === 'in_progress') {
-            return response()->json(['message' => 'Job is already in progress.'], 400);
+        if ($job->status !== 'open') {
+            return response()->json(['message' => "Job already {$job->status}"], 400);
         }
-
-        $jobRequest->update(['status' => 'in_progress']);
+        if (! $job->applications()->where('user_id', $applicantId)->exists()) {
+            return response()->json(['message' => 'Did not apply'], 400);
+        }
+        $job->update(['status' => 'in_progress']);
 
         Notification::create([
-            'user_id' => $jobRequest->user_id,
-            'from_user_id' => auth()->id(),
+            'user_id' => $applicantId,
+            'from_user_id' => Auth::id(),
             'notifiable_type' => JobRequest::class,
-            'notifiable_id' => $jobRequest->id,
+            'notifiable_id' => $job->id,
             'type' => 'job_application_accepted',
             'read' => false,
         ]);
-
-        return response()->json(['message' => 'Applicant accepted. Job is now in progress.']);
+        return response()->json(['message' => 'Applicant accepted'], 200);
     }
 
-    public function rejectApplicant($serviceId)
+    public function rejectApplicant($serviceId, $applicantId)
     {
-        $jobRequest = JobRequest::findOrFail($serviceId);
-
-        if (auth()->id() !== $jobRequest->user_id) {
+        $job = Service::findOrFail($serviceId)->details;
+        if (Auth::id() !== $job->user_id) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
-
-        if ($jobRequest->status === 'closed') {
-            return response()->json(['message' => 'Job is already closed.'], 400);
+        if ($job->status !== 'open') {
+            return response()->json(['message' => "Job already {$job->status}"], 400);
         }
-
-        $jobRequest->update(['status' => 'closed']);
+        if (! $job->applications()->where('user_id', $applicantId)->exists()) {
+            return response()->json(['message' => 'Did not apply'], 400);
+        }
+        $job->applications()->where('user_id', $applicantId)->delete();
 
         Notification::create([
-            'user_id' => $jobRequest->user_id,
-            'from_user_id' => auth()->id(),
+            'user_id' => $applicantId,
+            'from_user_id' => Auth::id(),
             'notifiable_type' => JobRequest::class,
-            'notifiable_id' => $jobRequest->id,
+            'notifiable_id' => $job->id,
             'type' => 'job_application_rejected',
             'read' => false,
         ]);
-
-        return response()->json(['message' => 'Applicant rejected. Job request is now closed.']);
+        return response()->json(['message' => 'Applicant rejected'], 200);
     }
 }

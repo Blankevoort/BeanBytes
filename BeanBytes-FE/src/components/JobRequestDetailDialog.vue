@@ -2,7 +2,7 @@
   <q-card class="q-pa-md" style="width: 500px">
     <q-card-section>
       <div class="text-h6">{{ job.title }}</div>
-      
+
       <div class="text-subtitle1">Type: {{ job.type }}</div>
     </q-card-section>
 
@@ -49,7 +49,7 @@ const props = defineProps({
 
 const applyJob = async () => {
   try {
-    const { data } = await api.post(`/api/job-requests/${props.job.id}/apply`)
+    const { data } = await api.post(`/api/service/${props.job.id}/apply`)
     $q.notify({ message: data.message, color: 'green' })
   } catch (error) {
     console.error('Error applying for job:', error)

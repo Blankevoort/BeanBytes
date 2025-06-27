@@ -83,6 +83,7 @@
 
         <q-separator dark />
       </div>
+
       <!-- Add new post -->
 
       <div class="q-pt-lg">

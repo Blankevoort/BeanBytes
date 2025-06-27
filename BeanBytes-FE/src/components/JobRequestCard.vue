@@ -110,7 +110,7 @@ const fixedImage = (path) => {
 
 const acceptApplicant = async (jobRequestId, interactionId) => {
   try {
-    await api.post(`/api/job-requests/${jobRequestId}/accept/${interactionId}`)
+    await api.post(`/api/service/${jobRequestId}/applicants/${interactionId}/accept/`)
     $q.notify({ type: 'positive', message: 'Applicant accepted.' })
   } catch (error) {
     console.error(error)
@@ -120,7 +120,7 @@ const acceptApplicant = async (jobRequestId, interactionId) => {
 
 const rejectApplicant = async (jobRequestId, interactionId) => {
   try {
-    await api.post(`/api/job-requests/${jobRequestId}/reject/${interactionId}`)
+    await api.post(`/api/service/${jobRequestId}/applicants/${interactionId}/reject`)
     $q.notify({ type: 'warning', message: 'Applicant rejected.' })
   } catch (error) {
     console.error(error)

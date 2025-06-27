@@ -6,15 +6,17 @@ use Illuminate\Database\Eloquent\Model;
 
 class Service extends Model
 {
-    protected $fillable = ['title', 'description', 'type', 'user_id', 'status'];
+    protected $fillable = [
+      'title',
+      'description',
+      'type',    
+      'status',
+      'details_id',
+      'details_type',
+    ];
 
     public function details()
     {
         return $this->morphTo();
-    }
-
-    public function user()
-    {
-        return $this->belongsTo(User::class);
     }
 }
