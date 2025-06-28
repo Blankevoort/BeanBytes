@@ -180,10 +180,6 @@
             </div>
           </q-tab-panel>
 
-          <!-- <q-tab-panel name="featured">
-            <div class="text-grey">Featured posts will be implemented later.</div>
-          </q-tab-panel> -->
-
           <q-tab-panel name="trends">
             <div v-if="posts.length === 0">
               <p class="text-grey">No trending posts.</p>
@@ -248,7 +244,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, ref, watch, watchEffect } from 'vue'
 import { useQuasar, debounce } from 'quasar'
 import { api } from 'src/boot/axios'
 import { useRouter } from 'vue-router'
@@ -293,25 +289,22 @@ watch(searchInput, fetchSearchResults)
 const fetchPosts = async () => {
   posts.value = []
 
+  let endpoint = '/api/get-posts'
+  if (postsTabs.value === 'following') {
+    endpoint = '/api/posts/following'
+  } else if (postsTabs.value === 'trends') {
+    endpoint = '/api/posts/trending'
+  }
+
   try {
-    let response
-
-    if (postsTabs.value === 'following') {
-      response = await api.get('/api/posts/following')
-    } else if (postsTabs.value === 'trends') {
-      response = await api.get('/api/posts/trending')
-    } else if (postsTabs.value === 'posts') {
-      response = await api.get('/api/get-posts')
-    } else {
-      posts.value = []
-      return
-    }
-
-    posts.value = response.data
+    const { data } = await api.get(endpoint)
+    posts.value = data.data ?? data
   } catch (error) {
     console.error('Error fetching posts:', error)
   }
 }
+
+watchEffect(fetchPosts)
 
 const updateFollowStatus = async ({ userId }) => {
   try {
@@ -329,27 +322,22 @@ async function addPost() {
   if (!content.value) return
 
   const postData = new FormData()
-  postData.append('content', content.value || '')
+  postData.append('content', content.value)
 
-  if (imageFile.value) {
-    postData.append('assets[]', imageFile.value)
+  if (imageFile.value instanceof File) {
+    postData.append('assets', imageFile.value, imageFile.value.name)
   }
 
   try {
-    await api
-      .post('/api/add-post', postData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
-      .then((r) => {
-        if (r.data.status == 200) {
-          content.value = ''
-          imageFile.value = null
-          imagePreview.value = null
-          showDialog.value = false
-          $q.notify({ message: 'Post created successfully!', color: 'green' })
-        }
-        fetchPosts()
-      })
+    const r = await api.post('/api/add-post', postData)
+    if (r.data.status === 200) {
+      content.value = ''
+      imageFile.value = null
+      imagePreview.value = null
+      showDialog.value = false
+      $q.notify({ message: 'Post created successfully!', color: 'green' })
+      fetchPosts()
+    }
   } catch (error) {
     console.error('Error creating post:', error)
     $q.notify({ message: 'Failed to create post', color: 'red' })

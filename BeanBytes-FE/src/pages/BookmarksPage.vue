@@ -1,6 +1,12 @@
 <template>
   <q-page class="bg-dark row justify-center">
-    <div class="text-grey-6 col-sm-10 col-md-10 col-lg-8 col-xl-8">
+    <div class="text-grey-6 col-xs-12 col-sm-10 col-md-10 col-lg-8 col-xl-8">
+      <div class="row items-center q-gutter-x-md q-px-sm lt-md">
+      <q-icon name="arrow_back" @click="router.push('/')" size="20px" />
+
+      <div class="text-white q-py-md" style="font-size: 20px">Bookmarks</div>
+    </div>
+
       <div v-if="posts.length">
         <PostCard
           v-for="post in posts"
@@ -9,7 +15,8 @@
           @bookmark-changed="onBookmarkChanged"
         />
       </div>
-      <div v-else class="text-center text-grey">You haven’t saved any posts.</div>
+
+      <div v-else class="text-center text-grey q-mt-lg">You haven’t saved any posts.</div>
     </div>
   </q-page>
 </template>
@@ -18,10 +25,13 @@
 import { ref } from 'vue'
 import { useQuasar } from 'quasar'
 import { api } from 'src/boot/axios'
+import { useRouter } from 'vue-router'
+
 import PostCard from 'src/components/PostCard.vue'
 
 const $q = useQuasar()
 const posts = ref([])
+const router = useRouter()
 let lastRemoved = null
 
 async function fetchPosts() {

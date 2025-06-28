@@ -90,8 +90,7 @@ class PostController extends Controller
             'visibility' => 'nullable|in:public,private,friends',
             'tags' => 'nullable|array',
             'tags.*' => 'string',
-            'assets' => 'nullable|array',
-            'assets.*' => 'file|mimes:jpeg,png,jpg,gif,mp4,mov,avi|max:10240',
+            'assets' => 'nullable|file|mimes:jpeg,png,jpg|max:10240',
         ]);
 
         preg_match('/`(.*?)`/s', $request->content, $codeMatch);
@@ -108,9 +107,9 @@ class PostController extends Controller
         $allTags = array_unique(array_merge($hashtags, $request->tags ?? []));
 
         $post = Post::create([
-            'user_id' => Auth::id(),
-            'content' => $cleanContent,
-            'fullCode' => $fullCode,
+            'user_id'    => Auth::id(),
+            'content'    => $cleanContent,
+            'fullCode'   => $fullCode,
             'visibility' => $request->input('visibility', 'public'),
         ]);
 
@@ -127,23 +126,18 @@ class PostController extends Controller
         }
 
         if ($request->hasFile('assets')) {
-            $files = is_array($request->file('assets')) ? $request->file('assets') : [$request->file('assets')];
+            $file = $request->file('assets');
+            $mime = $file->getMimeType();
+            $type = str_contains($mime, 'image') ? 'image' : 'video';
+            $path = $file->store('post_assets', 'public');
 
-            foreach ($files as $file) {
-                if ($file) {
-                    $fileType = $file->getMimeType();
-                    $type = str_contains($fileType, 'image') ? 'image' : 'video';
-                    $path = $file->store('post_assets', 'public');
-
-                    Asset::create([
-                        'user_id' => Auth::id(),
-                        'assetable_id' => $post->id,
-                        'assetable_type' => Post::class,
-                        'type' => $type,
-                        'path' => $path
-                    ]);
-                }
-            }
+            Asset::create([
+                'user_id'        => Auth::id(),
+                'assetable_id'   => $post->id,
+                'assetable_type' => Post::class,
+                'type'           => $type,
+                'path'           => $path,
+            ]);
         }
 
         return response()->json([
@@ -337,19 +331,72 @@ class PostController extends Controller
         $user = Auth::guard('sanctum')->user();
 
         $posts = Post::with([
-            'user:id,username,name',
-            'tags:id,name',
-            'assets'
-        ])
+                'user:id,username,name',
+                'tags:id,name',
+                'assets'
+            ])
             ->withCount('comments')
-            ->withCount(['interactions as likes_count' => fn($query) => $query->where('type', 'like')])
-            ->withCount(['interactions as shares_count' => fn($query) => $query->where('type', 'share')])
-            ->orderByDesc('likes_count')
-            ->orderByDesc('shares_count')
-            ->orderByDesc('comments_count')
-            ->take(20)
             ->get()
-            ->map(fn($post) => $this->transformPost($post, $user));
+            ->map(function ($post) use ($user) {
+                $likesCount = Interaction::where('interactionable_id', $post->id)
+                    ->where('interactionable_type', Post::class)
+                    ->where('type', 'like')
+                    ->count();
+
+                $sharesCount = Interaction::where('interactionable_id', $post->id)
+                    ->where('interactionable_type', Post::class)
+                    ->where('type', 'share')
+                    ->count();
+
+                return [
+                    'id' => $post->id,
+                    'content' => $post->content,
+                    'fullCode' => $post->fullCode,
+                    'visibility' => $post->visibility,
+                    'created_at' => $post->created_at,
+                    'user' => [
+                        'id' => $post->user->id,
+                        'name' => $post->user->name,
+                        'username' => $post->user->username,
+                    ],
+                    'tags' => $post->tags->pluck('name'),
+                    'likes_count' => $likesCount,
+                    'comments_count' => $post->comments_count,
+                    'shares_count' => $sharesCount,
+                    'isLiked' => $user ? Interaction::where('user_id', $user->id)
+                        ->where('interactionable_id', $post->id)
+                        ->where('interactionable_type', Post::class)
+                        ->where('type', 'like')
+                        ->exists() : false,
+                    'isShared' => $user ? Interaction::where('user_id', $user->id)
+                        ->where('interactionable_id', $post->id)
+                        ->where('interactionable_type', Post::class)
+                        ->where('type', 'share')
+                        ->exists() : false,
+                    'isBookmarked' => $user ? Interaction::where('user_id', $user->id)
+                        ->where('interactionable_id', $post->id)
+                        ->where('interactionable_type', Post::class)
+                        ->where('type', 'bookmark')
+                        ->exists() : false,
+                    'isFollowed' => $user ? Interaction::where('user_id', $user->id)
+                        ->where('interactionable_id', $post->user->id)
+                        ->where('interactionable_type', User::class)
+                        ->where('type', 'follow')
+                        ->exists() : false,
+                    'assets' => $post->assets->map(function ($asset) {
+                        return [
+                            'id' => $asset->id,
+                            'type' => $asset->type,
+                            'url' => $asset->getRawOriginal('path'),
+                        ];
+                    }),
+                ];
+            })
+            ->sortByDesc(fn ($post) => $post['likes_count'])
+            ->sortByDesc(fn ($post) => $post['comments_count'])
+            ->sortByDesc(fn ($post) => $post['shares_count'])
+            ->values() 
+            ->take(20);
 
         return response()->json($posts);
     }

@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Asset;
 use App\Models\Interaction;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Post extends Model
@@ -40,5 +41,15 @@ class Post extends Model
     public function interactions()
     {
         return $this->morphMany(Interaction::class, 'interactionable');
+    }
+
+    public function likes(): MorphMany
+    {
+        return $this->interactions()->where('type', 'like');
+    }
+
+    public function shares(): MorphMany
+    {
+        return $this->interactions()->where('type', 'share');
     }
 }
