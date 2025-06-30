@@ -1,11 +1,5 @@
 <template>
   <q-page class="bg-dark">
-    <div class="row items-center q-gutter-x-md q-px-sm lt-md">
-      <q-icon name="arrow_back" @click="router.push('/')" size="20px" />
-
-      <div class="text-white q-py-md" style="font-size: 20px">Job Requests</div>
-    </div>
-
     <div class="row justify-center">
       <div class="col-12 col-md-8 text-grey-6">
         <q-tabs
@@ -63,11 +57,9 @@
 <script setup>
 import { ref, watchEffect, watch } from 'vue'
 import { api } from 'src/boot/axios'
-import { useRouter } from 'vue-router'
 
 import JobRequestCard from 'src/components/JobRequestCard.vue'
 
-const router = useRouter()
 
 const jobsTab = ref('allJobs')
 const jobRequests = ref([])
@@ -79,12 +71,12 @@ const model = ref('All Jobs')
 
 const labelToTab = {
   'All Jobs': 'allJobs',
-  'My Jobs': 'myJobs'
+  'My Jobs': 'myJobs',
 }
 
 const tabToLabel = {
   allJobs: 'All Jobs',
-  myJobs: 'My Jobs'
+  myJobs: 'My Jobs',
 }
 
 watch(jobsTab, (val) => {
@@ -100,9 +92,7 @@ watch(model, (val) => {
 const filterTabs = (val, update) => {
   update(() => {
     const needle = val.toLowerCase()
-    filteredTabs.value = mobileJobsTab.filter((v) =>
-      v.toLowerCase().includes(needle)
-    )
+    filteredTabs.value = mobileJobsTab.filter((v) => v.toLowerCase().includes(needle))
   })
 }
 

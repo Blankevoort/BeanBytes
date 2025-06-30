@@ -11,76 +11,22 @@ use App\Models\Interaction;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Resources\PostResource;
 
 class PostController extends Controller
 {
     public function getAllPosts()
     {
-        $user = Auth::guard('sanctum')->user();
-
         $posts = Post::with([
             'user:id,username,name',
+            'user.profile.profileImage',
             'tags:id,name',
             'assets'
         ])
-            ->withCount('comments')
-            ->get()
-            ->map(function ($post) use ($user) {
-                return [
-                    'id' => $post->id,
-                    'content' => $post->content,
-                    'fullCode' => $post->fullCode,
-                    'visibility' => $post->visibility,
-                    'created_at' => $post->created_at,
-                    'user' => [
-                        'id' => $post->user->id,
-                        'name' => $post->user->name,
-                        'username' => $post->user->username,
-                    ],
-                    'tags' => $post->tags->pluck('name'),
-                    'likes_count' => Interaction::where('interactionable_id', $post->id)
-                        ->where('interactionable_type', Post::class)
-                        ->where('type', 'like')
-                        ->count(),
-                    'comments_count' => $post->comments_count,
-                    'shares_count' => Interaction::where('interactionable_id', $post->id)
-                        ->where('interactionable_type', Post::class)
-                        ->where('type', 'share')
-                        ->count(),
-                    'isLiked' => $user ? Interaction::where('user_id', $user->id)
-                        ->where('interactionable_id', $post->id)
-                        ->where('interactionable_type', Post::class)
-                        ->where('type', 'like')
-                        ->exists() : false,
-                    'isShared' => $user ? Interaction::where('user_id', $user->id)
-                        ->where('interactionable_id', $post->id)
-                        ->where('interactionable_type', Post::class)
-                        ->where('type', 'share')
-                        ->exists() : false,
-                    'isBookmarked' => $user ? Interaction::where('user_id', $user->id)
-                        ->where('interactionable_id', $post->id)
-                        ->where('interactionable_type', 'post')
-                        ->where('type', 'bookmark')
-                        ->exists() : false,
-                    'isFollowed' => $user ? Interaction::where('user_id', $user->id)
-                        ->where('interactionable_id', $post->user->id)
-                        ->where('interactionable_type', User::class)
-                        ->where('type', 'follow')
-                        ->exists() : false,
-                    'assets' => Asset::where('assetable_id', $post->id)
-                        ->where('assetable_type', 'App\Models\Post')
-                        ->get()
-                        ->map(function ($asset) {
-                            return [
-                                'id' => $asset->id,
-                                'type' => $asset->type,
-                                'url' => $asset->getRawOriginal('path'),
-                            ];
-                        }),
-                ];
-            });
+        ->withCount('comments')
+        ->get();
 
-        return response()->json($posts);
+        return PostResource::collection($posts);
     }
 
     public function createPost(Request $request)
@@ -188,69 +134,16 @@ class PostController extends Controller
 
     public function getPost($id)
     {
-        $user = Auth::guard('sanctum')->user();
-
         $post = Post::with([
             'user:id,username,name',
+            'user.profile.profileImage',
             'tags:id,name',
             'assets'
         ])
-            ->withCount('comments')
-            ->findOrFail($id);
+        ->withCount('comments')
+        ->findOrFail($id);
 
-        $response = [
-            'id' => $post->id,
-            'content' => $post->content,
-            'fullCode' => $post->fullCode,
-            'visibility' => $post->visibility,
-            'created_at' => $post->created_at,
-            'user' => [
-                'id' => $post->user->id,
-                'name' => $post->user->name,
-                'username' => $post->user->username,
-            ],
-            'tags' => $post->tags->pluck('name'),
-            'likes_count' => Interaction::where('interactionable_id', $post->id)
-                ->where('interactionable_type', Post::class)
-                ->where('type', 'like')
-                ->count(),
-            'comments_count' => $post->comments_count,
-            'shares_count' => Interaction::where('interactionable_id', $post->id)
-                ->where('interactionable_type', Post::class)
-                ->where('type', 'share')
-                ->count(),
-            'isLiked' => $user ? Interaction::where('user_id', $user->id)
-                ->where('interactionable_id', $post->id)
-                ->where('interactionable_type', Post::class)
-                ->where('type', 'like')
-                ->exists() : false,
-            'isShared' => $user ? Interaction::where('user_id', $user->id)
-                ->where('interactionable_id', $post->id)
-                ->where('interactionable_type', Post::class)
-                ->where('type', 'share')
-                ->exists() : false,
-            'isBookmarked' => $user ? $post->interactions()
-                ->where('user_id', $user->id)
-                ->where('type', 'bookmark')
-                ->exists() : false,
-            'isFollowed' => $user ? Interaction::where('user_id', $user->id)
-                ->where('interactionable_id', $post->user->id)
-                ->where('interactionable_type', User::class)
-                ->where('type', 'follow')
-                ->exists() : false,
-            'assets' => Asset::where('assetable_id', $post->id)
-                ->where('assetable_type', 'App\Models\Post')
-                ->get()
-                ->map(function ($asset) {
-                    return [
-                        'id' => $asset->id,
-                        'type' => $asset->type,
-                        'url' => $asset->getRawOriginal('path'),
-                    ];
-                }),
-        ];
-
-        return response()->json($response);
+        return new PostResource($post);
     }
 
     public function getPostComments(Request $request)
@@ -258,7 +151,6 @@ class PostController extends Controller
         $request->validate([
             'post_id' => 'required|exists:posts,id'
         ]);
-
 
         $comments = Comment::where('post_id', $request->post_id)
             ->with(['user:id,username'])
@@ -272,7 +164,7 @@ class PostController extends Controller
 
     public function getTrendingTags()
     {
-        $tags = \App\Models\Tag::withCount('posts')
+        $tags = Tag::withCount('posts')
             ->orderByDesc('posts_count')
             ->limit(8)
             ->pluck('name');
@@ -304,162 +196,44 @@ class PostController extends Controller
 
     public function getFollowingPosts()
     {
-        $user = Auth::guard('sanctum')->user();
+        $authUser = Auth::guard('sanctum')->user();
 
         $followingIds = Interaction::where([
-            ['user_id', $user->id],
+            ['user_id', $authUser->id],
             ['interactionable_type', User::class],
             ['type', 'follow']
         ])->pluck('interactionable_id');
 
         $posts = Post::with([
             'user:id,username,name',
+            'user.profile.profileImage',
             'tags:id,name',
             'assets'
         ])
-            ->withCount('comments')
             ->whereIn('user_id', $followingIds)
             ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(fn($post) => $this->transformPost($post, $user));
+            ->withCount('comments')
+            ->get();
 
-        return response()->json($posts);
+        return PostResource::collection($posts);
     }
 
     public function getTrendingPosts()
     {
-        $user = Auth::guard('sanctum')->user();
-
         $posts = Post::with([
-                'user:id,username,name',
-                'tags:id,name',
-                'assets'
-            ])
+            'user:id,username,name',
+            'user.profile.profileImage',
+            'tags:id,name',
+            'assets'
+        ])
             ->withCount('comments')
             ->get()
-            ->map(function ($post) use ($user) {
-                $likesCount = Interaction::where('interactionable_id', $post->id)
-                    ->where('interactionable_type', Post::class)
-                    ->where('type', 'like')
-                    ->count();
-
-                $sharesCount = Interaction::where('interactionable_id', $post->id)
-                    ->where('interactionable_type', Post::class)
-                    ->where('type', 'share')
-                    ->count();
-
-                return [
-                    'id' => $post->id,
-                    'content' => $post->content,
-                    'fullCode' => $post->fullCode,
-                    'visibility' => $post->visibility,
-                    'created_at' => $post->created_at,
-                    'user' => [
-                        'id' => $post->user->id,
-                        'name' => $post->user->name,
-                        'username' => $post->user->username,
-                    ],
-                    'tags' => $post->tags->pluck('name'),
-                    'likes_count' => $likesCount,
-                    'comments_count' => $post->comments_count,
-                    'shares_count' => $sharesCount,
-                    'isLiked' => $user ? Interaction::where('user_id', $user->id)
-                        ->where('interactionable_id', $post->id)
-                        ->where('interactionable_type', Post::class)
-                        ->where('type', 'like')
-                        ->exists() : false,
-                    'isShared' => $user ? Interaction::where('user_id', $user->id)
-                        ->where('interactionable_id', $post->id)
-                        ->where('interactionable_type', Post::class)
-                        ->where('type', 'share')
-                        ->exists() : false,
-                    'isBookmarked' => $user ? Interaction::where('user_id', $user->id)
-                        ->where('interactionable_id', $post->id)
-                        ->where('interactionable_type', Post::class)
-                        ->where('type', 'bookmark')
-                        ->exists() : false,
-                    'isFollowed' => $user ? Interaction::where('user_id', $user->id)
-                        ->where('interactionable_id', $post->user->id)
-                        ->where('interactionable_type', User::class)
-                        ->where('type', 'follow')
-                        ->exists() : false,
-                    'assets' => $post->assets->map(function ($asset) {
-                        return [
-                            'id' => $asset->id,
-                            'type' => $asset->type,
-                            'url' => $asset->getRawOriginal('path'),
-                        ];
-                    }),
-                ];
-            })
-            ->sortByDesc(fn ($post) => $post['likes_count'])
-            ->sortByDesc(fn ($post) => $post['comments_count'])
-            ->sortByDesc(fn ($post) => $post['shares_count'])
-            ->values() 
+            ->sortByDesc('likes_count')
+            ->sortByDesc('comments_count')
+            ->sortByDesc('shares_count')
+            ->values()
             ->take(20);
 
-        return response()->json($posts);
-    }
-
-    private function transformPost($post, $user)
-    {
-        return [
-            'id' => $post->id,
-            'content' => $post->content,
-            'fullCode' => $post->fullCode,
-            'visibility' => $post->visibility,
-            'created_at' => $post->created_at,
-            'user' => [
-                'id' => $post->user->id,
-                'name' => $post->user->name,
-                'username' => $post->user->username,
-            ],
-            'tags' => $post->tags->pluck('name'),
-            'likes_count' => $post->likes_count ?? Interaction::where([
-                ['interactionable_id', $post->id],
-                ['interactionable_type', Post::class],
-                ['type', 'like']
-            ])->count(),
-            'comments_count' => $post->comments_count,
-            'shares_count' => $post->shares_count ?? Interaction::where([
-                ['interactionable_id', $post->id],
-                ['interactionable_type', Post::class],
-                ['type', 'share']
-            ])->count(),
-            'isLiked' => $user ? Interaction::where([
-                ['user_id', $user->id],
-                ['interactionable_id', $post->id],
-                ['interactionable_type', Post::class],
-                ['type', 'like']
-            ])->exists() : false,
-            'isShared' => $user ? Interaction::where([
-                ['user_id', $user->id],
-                ['interactionable_id', $post->id],
-                ['interactionable_type', Post::class],
-                ['type', 'share']
-            ])->exists() : false,
-            'isBookmarked' => $user ? Interaction::where([
-                ['user_id', $user->id],
-                ['interactionable_id', $post->id],
-                ['interactionable_type', Post::class],
-                ['type', 'bookmark']
-            ])->exists() : false,
-            'isFollowed' => $user ? Interaction::where([
-                ['user_id', $user->id],
-                ['interactionable_id', $post->user->id],
-                ['interactionable_type', User::class],
-                ['type', 'follow']
-            ])->exists() : false,
-            'assets' => Asset::where([
-                ['assetable_id', $post->id],
-                ['assetable_type', 'App\Models\Post']
-            ])
-                ->get()
-                ->map(fn($asset) => [
-                    'id' => $asset->id,
-                    'type' => $asset->type,
-                    'url' => $asset->getRawOriginal('path'),
-                ]),
-        ];
+        return PostResource::collection($posts);
     }
 }

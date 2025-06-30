@@ -41,8 +41,9 @@ export function useUser() {
     user.value = null
     loggedIn.value = false
     token.value = null
+    $q.cookies.remove('token')
 
-    api.post('api/logout').then($q.cookies.remove('token'), location.reload())
+    api.post('api/logout').then(location.reload())
   }
 
   onMounted(() => {

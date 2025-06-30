@@ -5,7 +5,14 @@
     <div class="row justify-between">
       <div class="cursor-pointer row q-gutter-x-md">
         <q-avatar size="32px" @click="router.push('user/' + user.name)">
-          <img :src="post.user.profile_picture || 'default-profile.jpg'" />
+          <img
+            :src="
+              post.user.profile_picture
+                ? 'http://127.0.0.1:8000/storage/' + post.user.profile_picture
+                : 'default-profile.jpg'
+            "
+            alt="profile image"
+          />
         </q-avatar>
 
         <div>

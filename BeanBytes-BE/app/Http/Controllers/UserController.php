@@ -271,6 +271,7 @@ class UserController extends Controller
         })
             ->with([
                 'user:id,username,name',
+                'user.profile.profileImage',
                 'tags:id,name',
                 'assets'
             ])
@@ -287,6 +288,7 @@ class UserController extends Controller
                         'id' => $post->user->id,
                         'name' => $post->user->name,
                         'username' => $post->user->username,
+                        'profile_picture' => optional($post->user->profile?->profileImage)->getRawOriginal('path'),
                     ],
                     'tags' => $post->tags->pluck('name'),
                     'likes_count' => Interaction::where('interactionable_id', $post->id)
@@ -471,10 +473,15 @@ class UserController extends Controller
             : false;
 
         $posts = Post::where('user_id', $user->id)
-            ->with(['user:id,username,name', 'tags:id,name', 'assets'])
+            ->with([
+                'user:id,username,name',
+                'user.profile.profileImage',
+                'tags:id,name',
+                'assets'
+            ])
             ->withCount('comments')
             ->get()
-            ->map(function ($post) use ($authUser) {
+            ->map(function ($post) use ($user) {
                 return [
                     'id' => $post->id,
                     'content' => $post->content,
@@ -485,6 +492,7 @@ class UserController extends Controller
                         'id' => $post->user->id,
                         'name' => $post->user->name,
                         'username' => $post->user->username,
+                        'profile_picture' => optional($post->user->profile?->profileImage)->getRawOriginal('path'),
                     ],
                     'tags' => $post->tags->pluck('name'),
                     'likes_count' => Interaction::where('interactionable_id', $post->id)
@@ -496,34 +504,32 @@ class UserController extends Controller
                         ->where('interactionable_type', Post::class)
                         ->where('type', 'share')
                         ->count(),
-                    'isLiked' => $authUser ? Interaction::where('user_id', $authUser->id)
+                    'isLiked' => Interaction::where('user_id', $user->id)
                         ->where('interactionable_id', $post->id)
                         ->where('interactionable_type', Post::class)
                         ->where('type', 'like')
-                        ->exists() : false,
-                    'isShared' => $authUser ? Interaction::where('user_id', $authUser->id)
+                        ->exists(),
+                    'isShared' => Interaction::where('user_id', $user->id)
                         ->where('interactionable_id', $post->id)
                         ->where('interactionable_type', Post::class)
                         ->where('type', 'share')
-                        ->exists() : false,
-                    'isBookmarked' => $authUser ? Interaction::where('user_id', $authUser->id)
-                        ->where('interactionable_id', $post->id)
-                        ->where('interactionable_type', 'post')
-                        ->where('type', 'bookmark')
-                        ->exists() : false,
-                    'isFollowed' => $authUser ? Interaction::where('user_id', $authUser->id)
+                        ->exists(),
+                    'isBookmarked' => true,
+                    'isFollowed' => $user ? Interaction::where('user_id', $user->id)
                         ->where('interactionable_id', $post->user->id)
                         ->where('interactionable_type', User::class)
                         ->where('type', 'follow')
                         ->exists() : false,
                     'assets' => Asset::where('assetable_id', $post->id)
-                        ->where('assetable_type', 'App\\Models\\Post')
+                        ->where('assetable_type', 'App\Models\Post')
                         ->get()
-                        ->map(fn($asset) => [
-                            'id' => $asset->id,
-                            'type' => $asset->type,
-                            'url' => $asset->getRawOriginal('path'),
-                        ]),
+                        ->map(function ($asset) {
+                            return [
+                                'id' => $asset->id,
+                                'type' => $asset->type,
+                                'url' => $asset->getRawOriginal('path'),
+                            ];
+                        }),
                 ];
             });
 

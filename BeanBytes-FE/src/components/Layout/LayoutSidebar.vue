@@ -13,50 +13,43 @@
             <q-item-section>Job Requests</q-item-section>
           </q-item>
 
-          <q-item clickable disable v-ripple to="/groups">
-            <q-item-section avatar><q-icon name="groups" /></q-item-section>
-            <q-item-section>Groups</q-item-section>
-          </q-item>
+          <q-separator color="grey-9" class="q-my-sm" />
 
-          <!-- <q-item clickable disable v-ripple to="/messages">
-            <q-item-section avatar><q-icon name="message" /></q-item-section>
-            <q-item-section>Messages</q-item-section>
-
-            <div>
-              <q-badge color="orange" label="1" rounded />
-            </div>
-          </q-item> -->
-
-          <q-item clickable v-ripple @click="handleBookmarksClick">
+          <q-item clickable v-ripple :to="user ? '/bookmarks' : '/account'">
             <q-item-section avatar><q-icon name="bookmark" /></q-item-section>
             <q-item-section>Bookmarks</q-item-section>
           </q-item>
 
-          <q-separator color="grey-9" class="q-my-sm" />
-
-          <q-item clickable v-ripple @click="handleNotificationClick">
+          <q-item clickable v-ripple :to="user ? '/notifications' : '/account'">
             <q-item-section avatar><q-icon name="notifications" /></q-item-section>
             <q-item-section>Notifications</q-item-section>
           </q-item>
 
-          <q-item clickable v-ripple @click="handleSettingsClick">
+          <q-item clickable v-ripple :to="user ? '/settings/account' : '/account'">
             <q-item-section avatar><q-icon name="settings" /></q-item-section>
             <q-item-section>Settings</q-item-section>
           </q-item>
 
           <q-separator color="grey-9" class="q-my-sm" />
 
-          <q-item clickable v-ripple>
+          <q-item clickable v-ripple :to="user ? `/user/${user.name}` : '/account'">
             <q-item-section avatar>
-              <q-avatar> <img :src="user?.avatar || 'profile.jpg'" /></q-avatar>
+              <q-avatar>
+                <img alt="profile image" :src="profilePicture" />
+              </q-avatar>
             </q-item-section>
+
             <q-item-section>{{ user?.username || 'Guest' }}</q-item-section>
+
+            <q-item-section v-if="user" side
+              ><q-icon color="red" size="20px" name="logout" @click="logout"
+            /></q-item-section>
           </q-item>
         </q-list>
       </div>
 
       <div class="sidebar-footer">
-        <q-separator color="" class="q-my-sm" dark />
+        <q-separator color="grey-9" class="q-my-sm" />
 
         <div class="row justify-between items-center">
           Dark Theme
@@ -70,14 +63,24 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
-import { useRouter } from 'vue-router'
 import { useAuthStore } from 'src/stores/auth'
+import { useUser } from 'src/composables/useUser'
 
 const $q = useQuasar()
-const router = useRouter()
 const authStore = useAuthStore()
+const { logout } = useUser()
 
 const user = computed(() => authStore.user)
+
+const profilePicture = computed(() => {
+  const path = user.value?.profile?.profile_image?.path
+
+  if (!path) return 'default-profile.jpg'
+
+  return path.startsWith('http')
+    ? path
+    : `http://127.0.0.1:8000/storage/${path.replace(/\\/g, '/')}`
+})
 
 const darkMode = ref(localStorage.getItem('darkMode') === 'true')
 $q.dark.set(darkMode.value)
@@ -87,32 +90,8 @@ const toggleDarkMode = () => {
   localStorage.setItem('darkMode', darkMode.value)
 }
 
-const handleBookmarksClick = () => {
-  if (!user.value) {
-    router.push('/account')
-  } else {
-    router.push('/bookmarks')
-  }
-}
-
-const handleSettingsClick = () => {
-  if (!user.value) {
-    router.push('/account')
-  } else {
-    router.push('/settings/account')
-  }
-}
-
-const handleNotificationClick = () => {
-  if (!user.value) {
-    router.push('/account')
-  } else {
-    router.push('/notifications')
-  }
-}
-
-onMounted(() => {
-  authStore.fetchUser()
+onMounted(async () => {
+  await authStore.fetchUser()
 })
 </script>
 
