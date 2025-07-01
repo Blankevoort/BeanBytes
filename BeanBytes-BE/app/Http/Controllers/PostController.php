@@ -23,8 +23,8 @@ class PostController extends Controller
             'tags:id,name',
             'assets'
         ])
-        ->withCount('comments')
-        ->get();
+            ->withCount('comments')
+            ->get();
 
         return PostResource::collection($posts);
     }
@@ -140,8 +140,8 @@ class PostController extends Controller
             'tags:id,name',
             'assets'
         ])
-        ->withCount('comments')
-        ->findOrFail($id);
+            ->withCount('comments')
+            ->findOrFail($id);
 
         return new PostResource($post);
     }
@@ -192,6 +192,24 @@ class PostController extends Controller
             'tag' => $tags,
             'user' => $users
         ]);
+    }
+
+    public function postsByTag($tagName)
+    {
+        $tag = Tag::where('name', $tagName)->first();
+
+        if (!$tag) {
+            return response()->json([
+                'message' => 'Tag not found'
+            ], 404);
+        }
+
+        $posts = $tag->posts()
+            ->with(['user', 'tags', 'assets'])
+            ->latest()
+            ->paginate(10);
+
+            return PostResource::collection($posts);
     }
 
     public function getFollowingPosts()

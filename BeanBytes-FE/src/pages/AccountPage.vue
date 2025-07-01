@@ -1,6 +1,6 @@
 <template>
   <q-page class="bg-dark text-grey-6 row justify-center">
-    <q-page class="gt-sm row justify-center items-center">
+    <q-page class="row justify-center items-center">
       <q-card
         bordered
         dark

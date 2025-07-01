@@ -27,6 +27,7 @@ Route::get('/user/{name}', [UserController::class, 'getUserAndPosts']);
 Route::get('/services', [ServiceController::class, 'index']);
 Route::get('/service/{id}', [ServiceController::class, 'show']);
 Route::get('/services', [ServiceController::class, 'getServices']);
+Route::get('/tag/{tagName}/posts', [PostController::class, 'postsByTag']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {

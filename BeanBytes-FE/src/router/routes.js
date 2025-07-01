@@ -14,6 +14,13 @@ const routes = [
     ]
   },
   {
+    path: '/tag/:tag',
+    component: () => import('layouts/MainLayout.vue'),
+    children: [
+      { path: '', component: () => import('pages/TagPostsPage.vue') }
+    ]
+  },
+  {
     path: '/account',
     component: () => import('layouts/BlankLayout.vue'),
     children: [

@@ -4,7 +4,7 @@
 
     <div class="row justify-between">
       <div class="cursor-pointer row q-gutter-x-md">
-        <q-avatar size="32px" @click="router.push('user/' + user.name)">
+        <q-avatar size="32px" @click="router.push('/user/' + user.name)">
           <img
             :src="
               post.user.profile_picture
@@ -17,7 +17,7 @@
 
         <div>
           <p>
-            <span @click="router.push('user/' + post.user.name)">{{ post.user.username }}</span>
+            <span @click="router.push('/user/' + post.user.name)">{{ post.user.username }}</span>
 
             <q-btn
               v-if="localPost.user.id !== authUserId"
@@ -94,7 +94,7 @@
           v-for="tag in post.tags"
           :key="tag"
           class="cursor-pointer text-secondary"
-          @click="search(tag)"
+          @click="router.push('/tag/' + tag)"
         >
           #{{ tag }}
         </div>

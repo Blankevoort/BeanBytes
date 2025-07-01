@@ -6,7 +6,7 @@
       <div class="col- q-pa-xs cursor-pointer" v-for="tag in tags" :key="tag.name">
         <div
           style="border: 1px solid grey; padding: 5px 15px; border-radius: 8px"
-          @click="router.push('tag/' + tag)"
+          @click="router.push('/tag/' + tag)"
         >
           #{{ tag }}
         </div>
