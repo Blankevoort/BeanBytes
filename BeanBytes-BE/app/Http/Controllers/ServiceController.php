@@ -42,7 +42,10 @@ class ServiceController extends Controller
     {
         $authUser = Auth::guard('sanctum')->user();
 
-        $query = Service::with('user');
+        $query = Service::with([
+            'user',
+            'jobRequest.skills'
+        ]);
 
         if ($authUser) {
             $query->where('user_id', '!=', $authUser->id);
@@ -63,7 +66,10 @@ class ServiceController extends Controller
             return response()->json([], 200);
         }
 
-        $query = Service::with('user')->where('user_id', $authUser->id);
+        $query = Service::with([
+            'user',
+            'jobRequest.applications.user.profile.profileImage',
+        ])->where('user_id', $authUser->id);
 
         if ($request->filled('type')) {
             $query->where('type', $request->type);
@@ -265,8 +271,6 @@ class ServiceController extends Controller
         if (!$job->applications()->where('user_id', $applicantId)->exists()) {
             return response()->json(['message' => 'Did not apply'], 400);
         }
-
-        $job->applications()->where('user_id', $applicantId)->delete();
 
         Notification::create([
             'user_id' => $applicantId,

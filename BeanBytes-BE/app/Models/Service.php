@@ -43,9 +43,9 @@ class Service extends Model
 
     public function jobRequest()
     {
-        return $this->hasOne(JobRequest::class);
+        return $this->hasOne(JobRequest::class, 'service_id');
     }
-    
+
     public function codeSnippet()
     {
         return $this->hasOne(CodeSnippet::class);

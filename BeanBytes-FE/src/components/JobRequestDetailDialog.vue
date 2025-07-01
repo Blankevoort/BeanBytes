@@ -3,35 +3,46 @@
     <q-card-section>
       <div class="text-h6">{{ job.title }}</div>
 
-      <div class="text-subtitle1">Type: {{ job.type }}</div>
+      <div class="text-subtitle1">Type: {{ job.type_label }}</div>
     </q-card-section>
 
     <q-card-section>
       <p>{{ job.description }}</p>
+
       <p>
         <strong>Budget:</strong>
-        {{ job.budget ? '$' + job.budget : 'N/A' }}
+        {{
+          job.job_request?.budget
+            ? '$' + parseFloat(job.job_request.budget).toLocaleString()
+            : 'N/A'
+        }}
       </p>
+
       <p>
         <strong>Hourly Rate:</strong>
-        {{ job.hourly_rate ? '$' + job.hourly_rate : 'N/A' }}
-      </p>
-      <p><strong>Status:</strong> {{ job.status }}</p>
-      <p>
-        <strong>Skills Required:</strong>
+        {{
+          job.job_request?.hourly_rate
+            ? '$' + parseFloat(job.job_request.hourly_rate).toLocaleString()
+            : 'N/A'
+        }}
       </p>
 
-      <div v-if="job.skills && job.skills.length">
-        <span v-for="(skill, index) in job.skills" :key="skill.id">
-          {{ skill.name }}<span v-if="index !== job.skills.length - 1">, </span>
+      <p><strong>Status:</strong> {{ job.status_label }}</p>
+
+      <p><strong>Skills Required:</strong></p>
+      <div v-if="job.job_request?.skills?.length">
+        <span v-for="(skill, index) in job.job_request.skills" :key="skill.id">
+          {{ skill.name }}<span v-if="index !== job.job_request.skills.length - 1">, </span>
         </span>
       </div>
-
-      <span v-else>No skills specified.</span>
+      <div v-else>
+        <span>No skills specified.</span>
+      </div>
     </q-card-section>
 
     <q-card-actions align="right">
       <q-btn label="Apply" color="primary" @click="applyJob" />
+      
       <q-btn label="Close" flat @click="$emit('close')" />
     </q-card-actions>
   </q-card>
@@ -53,7 +64,10 @@ const applyJob = async () => {
     $q.notify({ message: data.message, color: 'green' })
   } catch (error) {
     console.error('Error applying for job:', error)
-    $q.notify({ message: 'Failed to apply for job', color: 'red' })
+    $q.notify({
+      message: error.response?.data?.message || 'Failed to apply for job',
+      color: 'red',
+    })
   }
 }
 </script>
