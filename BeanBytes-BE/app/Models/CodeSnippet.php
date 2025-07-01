@@ -10,11 +10,6 @@ class CodeSnippet extends Model
 
     public function service()
     {
-        return $this->morphOne(Service::class, 'details');
+        return $this->belongsTo(Service::class);
     }
-
-    // public function purchases()
-    // {
-    //     return $this->hasMany(Purchase::class, 'snippet_id');
-    // }
 }

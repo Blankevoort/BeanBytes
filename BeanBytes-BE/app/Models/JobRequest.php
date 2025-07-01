@@ -10,35 +10,18 @@ class JobRequest extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id',
         'budget',
         'hourly_rate',
-        'type',
-        'status',
     ];
 
-    protected $appends = ['type_label','status_label'];
-
-    public function getTypeLabelAttribute()
+    public function skills()
     {
-        return [
-            'looking_for_job'=>'Looking',
-            'hiring'=>'Hiring',
-        ][$this->type] ?? $this->type;
-    }
-
-    public function getStatusLabelAttribute()
-    {
-        return [
-            'open'=>'Open',
-            'in_progress'=>'In Progress',
-            'closed'=>'Closed',
-        ][$this->status] ?? $this->status;
+        return $this->belongsToMany(Skill::class);
     }
 
     public function service()
     {
-        return $this->morphOne(Service::class,'details');
+        return $this->belongsTo(Service::class);
     }
 
     public function user()
@@ -46,24 +29,18 @@ class JobRequest extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function skills()
-    {
-        return $this->belongsToMany(Skill::class);
-    }
-
     public function interactions()
     {
-        return $this->morphMany(Interaction::class,'interactionable');
+        return $this->morphMany(Interaction::class, 'interactionable');
     }
 
     public function applications()
     {
-        return $this->interactions()->where('type','job_application');
+        return $this->interactions()->where('type', 'job_application');
     }
 
     public function getApplicantsCountAttribute()
     {
         return $this->applications()->count();
     }
-
 }

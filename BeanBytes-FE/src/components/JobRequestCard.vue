@@ -8,7 +8,7 @@
           <q-item-label caption>{{ job.description.substring(0, 100) }}...</q-item-label>
 
           <q-item-label caption>
-            <strong>Type:</strong> {{ job.type }} &nbsp; | <strong>Status:</strong> {{ job.status }}
+            <strong>Type:</strong> {{ job.type_label }} &nbsp; | <strong>Status:</strong> {{ job.status_label }}
           </q-item-label>
         </q-item-section>
 

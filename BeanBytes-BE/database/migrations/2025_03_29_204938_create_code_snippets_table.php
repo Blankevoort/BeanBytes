@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('code_snippets', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('service_id')->constrained()->onDelete('cascade');
             $table->string('language');
             $table->string('license')->nullable();
             $table->string('file_path');

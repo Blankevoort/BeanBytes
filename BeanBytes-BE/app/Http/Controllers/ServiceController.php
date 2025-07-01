@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Service;
 use App\Models\JobRequest;
+use App\Models\CodeSnippet;
 use App\Models\Interaction;
 use App\Models\Notification;
 use Illuminate\Http\Request;
@@ -41,15 +42,10 @@ class ServiceController extends Controller
     {
         $authUser = Auth::guard('sanctum')->user();
 
-        $query = Service::with([
-            'details',
-            'details.user.profile.profileImage',
-        ]);
+        $query = Service::with('user');
 
-        if ($authUser && $request->boolean('my_services')) {
-            $query->whereHas('details', function ($q) use ($authUser) {
-                $q->where('user_id', $authUser->id);
-            });
+        if ($authUser) {
+            $query->where('user_id', '!=', $authUser->id);
         }
 
         if ($request->filled('type')) {
@@ -61,19 +57,13 @@ class ServiceController extends Controller
 
     public function getUserServices(Request $request)
     {
-
         $authUser = Auth::guard('sanctum')->user();
 
-        $query = Service::with([
-            'details',
-            'details.user.profile.profileImage',
-        ]);
-
-        if ($authUser) {
-            $query->whereDoesntHave('details', function ($q) use ($authUser) {
-                $q->where('user_id', $authUser->id);
-            });
+        if (!$authUser) {
+            return response()->json([], 200);
         }
+
+        $query = Service::with('user')->where('user_id', $authUser->id);
 
         if ($request->filled('type')) {
             $query->where('type', $request->type);
@@ -87,33 +77,37 @@ class ServiceController extends Controller
         $request->validate([
             'title'       => 'required|string|max:255',
             'description' => 'required|string',
-            'type'        => 'required|in:job_request,code_snippet',
+            'type'        => 'required|in:hiring,looking_for_job,code_snippet',
         ]);
 
         $serviceData = $request->only(['title', 'description', 'type']);
         $serviceData['user_id'] = Auth::guard('sanctum')->id();
         $serviceData['status'] = 'open';
 
-        if ($serviceData['type'] === 'job_request') {
+        if (in_array($serviceData['type'], ['hiring', 'looking_for_job'])) {
             $request->validate([
                 'budget'      => 'required|numeric|min:0',
                 'hourly_rate' => 'required|numeric|min:0',
             ]);
 
             $jobRequest = JobRequest::create([
-                'title'             => $serviceData['title'],
-                'description'       => $serviceData['description'],
-                'type'              => 'hiring',
-                'budget'            => $request->budget,
-                'hourly_rate'       => $request->hourly_rate,
-                'user_id'           => $serviceData['user_id'],
-                'applicants_count'  => 0,
-                'status'            => 'open',
+                'budget'      => $request->budget,
+                'hourly_rate' => $request->hourly_rate,
+                'type'        => $serviceData['type'],
+                'status'      => 'open',
             ]);
 
-            $serviceData['details_id'] = $jobRequest->id;
-            $serviceData['details_type'] = JobRequest::class;
-        } elseif ($serviceData['type'] === 'code_snippet') {
+            $service = Service::create([
+                ...$serviceData,
+            ]);
+
+            $jobRequest->service()->associate($service);
+            $jobRequest->save();
+
+            return response()->json($service->load('details'), 201);
+        }
+
+        if ($serviceData['type'] === 'code_snippet') {
             $request->validate([
                 'language'  => 'required|string',
                 'license'   => 'nullable|string',
@@ -121,20 +115,24 @@ class ServiceController extends Controller
                 'is_free'   => 'required|boolean',
             ]);
 
-            $codeSnippet = \App\Models\CodeSnippet::create([
+            $codeSnippet = CodeSnippet::create([
                 'language'  => $request->language,
                 'license'   => $request->license,
                 'file_path' => $request->file_path,
                 'is_free'   => $request->is_free,
             ]);
 
-            $serviceData['details_id'] = $codeSnippet->id;
-            $serviceData['details_type'] = \App\Models\CodeSnippet::class;
+            $service = Service::create([
+                ...$serviceData,
+            ]);
+
+            $codeSnippet->service()->associate($service);
+            $codeSnippet->save();
+
+            return response()->json($service->load('details'), 201);
         }
 
-        $service = Service::create($serviceData);
-
-        return response()->json($service->load('details'), 201);
+        return response()->json(['message' => 'Invalid type'], 400);
     }
 
     public function updateService(Request $request, Service $service)
@@ -146,17 +144,15 @@ class ServiceController extends Controller
         $request->validate([
             'title'       => 'sometimes|string|max:255',
             'description' => 'sometimes|string',
-            'type'        => 'sometimes|in:job_request,code_snippet',
+            'status'      => 'sometimes|in:open,in_progress,closed',
         ]);
 
-        $service->update($request->only(['title', 'description', 'type', 'status']));
+        $service->update($request->only(['title', 'description', 'status']));
 
-        if ($service->type === 'job_request' && $service->details_type === JobRequest::class) {
-            $jobRequest = $service->details;
-            $jobRequest->update($request->only(['budget', 'hourly_rate', 'status']));
-        } elseif ($service->type === 'code_snippet' && $service->details_type === \App\Models\CodeSnippet::class) {
-            $codeSnippet = $service->details;
-            $codeSnippet->update($request->only(['language', 'license', 'file_path', 'is_free']));
+        if ($service->type !== 'code_snippet') {
+            $service->details->update($request->only(['budget', 'hourly_rate', 'status']));
+        } else {
+            $service->details->update($request->only(['language', 'license', 'file_path', 'is_free']));
         }
 
         return response()->json($service->load('details'));
@@ -179,44 +175,62 @@ class ServiceController extends Controller
 
     public function apply($serviceId)
     {
-        $service = Service::with('details')->findOrFail($serviceId);
-        $job = $service->details;
+        $service = Service::findOrFail($serviceId);
 
-        if (! $job instanceof JobRequest) {
+        if ($service->type !== 'hiring') {
             return response()->json(['message' => 'Not a job service'], 400);
         }
+
+        $job = JobRequest::where('service_id', $service->id)->first();
+
+        if (!$job) {
+            return response()->json(['message' => 'Job not found for this service'], 404);
+        }
+
         if ($job->applications()->where('user_id', Auth::id())->exists()) {
             return response()->json(['message' => 'Already applied'], 400);
         }
+
         $job->interactions()->create([
             'user_id' => Auth::id(),
             'type' => 'job_application',
         ]);
 
         Notification::create([
-            'user_id' => $job->user_id,
+            'user_id' => $service->user_id,
             'from_user_id' => Auth::id(),
             'notifiable_type' => JobRequest::class,
             'notifiable_id' => $job->id,
             'type' => 'job_application',
             'read' => false,
         ]);
+
         return response()->json(['message' => 'Application submitted'], 201);
     }
 
     public function acceptApplicant($serviceId, $applicantId)
     {
-        $job = Service::findOrFail($serviceId)->details;
-        if (Auth::id() !== $job->user_id) {
+        $service = Service::findOrFail($serviceId);
+
+        if ($service->type !== 'hiring') {
+            return response()->json(['message' => 'Not a job service'], 400);
+        }
+
+        $job = JobRequest::where('service_id', $service->id)->first();
+
+        if (!$job || Auth::id() !== $service->user_id) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
-        if ($job->status !== 'open') {
-            return response()->json(['message' => "Job already {$job->status}"], 400);
+
+        if ($service->status !== 'open') {
+            return response()->json(['message' => "Job already {$service->status}"], 400);
         }
-        if (! $job->applications()->where('user_id', $applicantId)->exists()) {
+
+        if (!$job->applications()->where('user_id', $applicantId)->exists()) {
             return response()->json(['message' => 'Did not apply'], 400);
         }
-        $job->update(['status' => 'in_progress']);
+
+        $service->update(['status' => 'in_progress']);
 
         Notification::create([
             'user_id' => $applicantId,
@@ -226,21 +240,32 @@ class ServiceController extends Controller
             'type' => 'job_application_accepted',
             'read' => false,
         ]);
+
         return response()->json(['message' => 'Applicant accepted'], 200);
     }
 
     public function rejectApplicant($serviceId, $applicantId)
     {
-        $job = Service::findOrFail($serviceId)->details;
-        if (Auth::id() !== $job->user_id) {
+        $service = Service::findOrFail($serviceId);
+
+        if ($service->type !== 'hiring') {
+            return response()->json(['message' => 'Not a job service'], 400);
+        }
+
+        $job = JobRequest::where('service_id', $service->id)->first();
+
+        if (!$job || Auth::id() !== $service->user_id) {
             return response()->json(['message' => 'Forbidden'], 403);
         }
-        if ($job->status !== 'open') {
-            return response()->json(['message' => "Job already {$job->status}"], 400);
+
+        if ($service->status !== 'open') {
+            return response()->json(['message' => "Job already {$service->status}"], 400);
         }
-        if (! $job->applications()->where('user_id', $applicantId)->exists()) {
+
+        if (!$job->applications()->where('user_id', $applicantId)->exists()) {
             return response()->json(['message' => 'Did not apply'], 400);
         }
+
         $job->applications()->where('user_id', $applicantId)->delete();
 
         Notification::create([
@@ -251,6 +276,7 @@ class ServiceController extends Controller
             'type' => 'job_application_rejected',
             'read' => false,
         ]);
+
         return response()->json(['message' => 'Applicant rejected'], 200);
     }
 }

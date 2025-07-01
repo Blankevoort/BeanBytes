@@ -26,6 +26,7 @@ Route::get('/user/{name}', [UserController::class, 'getUserAndPosts']);
 
 Route::get('/services', [ServiceController::class, 'index']);
 Route::get('/service/{id}', [ServiceController::class, 'show']);
+Route::get('/services', [ServiceController::class, 'getServices']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
@@ -49,7 +50,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/edit-post/{post}', [PostController::class, 'editPost']);
     Route::delete('/delete-post/{post}', [PostController::class, 'deletePost']);
 
-    Route::get('/services', [ServiceController::class, 'getServices']);
     Route::get('/my-services', [ServiceController::class, 'getUserServices']);
     Route::post('/service', [ServiceController::class, 'storeService']);
     Route::put('/service/{service}', [ServiceController::class, 'updateService']);

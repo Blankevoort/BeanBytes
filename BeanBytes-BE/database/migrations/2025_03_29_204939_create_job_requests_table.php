@@ -9,12 +9,7 @@ return new class extends Migration {
     {
         Schema::create('job_requests', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')
-                  ->constrained()
-                  ->onDelete('cascade');
-            $table->enum('type', ['hiring', 'looking_for_job']);
-            $table->enum('status', ['open', 'in_progress', 'closed'])
-                  ->default('open');
+            $table->foreignId('service_id')->constrained()->onDelete('cascade');
             $table->decimal('budget', 10, 2)->nullable();
             $table->decimal('hourly_rate', 10, 2)->nullable();
             $table->timestamps();
