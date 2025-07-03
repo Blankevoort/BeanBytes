@@ -1,5 +1,8 @@
 <template>
-  <q-page class="bg-dark row justify-center">
+  <q-page
+    class="row justify-center"
+    :class="[$q.dark.isActive ? 'bg-dark text-white' : 'bg-white text-black']"
+  >
     <div class="text-grey-6 col-sm-10 col-md-10 col-lg-8 col-xl-8">
       <div class="text-center q-my-md">
         <q-avatar size="125px" v-if="profileImagePreview">
@@ -34,15 +37,16 @@
           </div>
 
           <div class="col-12 q-pa-sm">
-            <q-input class="form-inputs" type="textarea" placeholder="Bio" v-model="bio" rows="3" />
+            <q-input class="form-inputs" type="textarea" placeholder="Bio" v-model="bio" rows="3"  />
           </div>
 
           <div class="col-12 q-pa-sm">
             <q-file
-              class="form-inputs"
               v-model="profileImage"
               label="Upload Profile Image"
               accept="image/*"
+              :fill-color="$q.dark.isActive ? '#2a2a2a' : 'grey-2'"
+              :color="$q.dark.isActive ? 'white' : 'black'"
             >
               <template v-slot:prepend>
                 <q-icon name="cloud_upload" />
@@ -141,9 +145,7 @@ async function updateUser() {
 .form-inputs input,
 .form-inputs textarea {
   width: 100%;
-  background-color: #2a2a2a;
   padding: 0.75rem;
-  color: #fff;
   font-size: 0.9rem;
   resize: vertical;
 }
@@ -156,5 +158,9 @@ async function updateUser() {
 .form-inputs input:focus,
 .form-inputs textarea:focus {
   outline: 2px solid #555;
+}
+
+.form-inputs .q-field__control {
+  font-size: 0.9rem;
 }
 </style>

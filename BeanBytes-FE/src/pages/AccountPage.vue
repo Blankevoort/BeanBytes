@@ -1,12 +1,10 @@
 <template>
-  <q-page class="bg-dark text-grey-6 row justify-center">
+  <q-page
+    class="row justify-center"
+    :class="[$q.dark.isActive ? 'bg-dark text-white' : 'bg-white text-black']"
+  >
     <q-page class="row justify-center items-center">
-      <q-card
-        bordered
-        dark
-        class="q-pa-lg q-px-xl bg-dark shadow-0"
-        style="width: 400px; border-radius: 16px"
-      >
+      <q-card bordered class="q-pa-lg q-px-xl shadow-0" style="width: 400px; border-radius: 16px">
         <q-form @submit="handleSubmit">
           <div class="q-my-lg text-center row items-center text-center">
             <q-btn
@@ -30,15 +28,16 @@
             v-if="step === 'enterEPhone'"
             v-model="emailPhone"
             outlined
-            dark
+            
             :rules="[(val) => !!val || 'Required!']"
             label="Enter Phone or Email"
           />
+
           <q-input
             v-if="step === 'enterPassword'"
             v-model="password"
             outlined
-            dark
+            
             :type="isPwd ? 'password' : 'text'"
             label="Password"
             :rules="[(val) => !!val || 'Required!', val && val.length > 6]"
@@ -51,11 +50,12 @@
               />
             </template>
           </q-input>
+
           <q-input
             v-if="step === 'registerPhoneSent'"
             v-model="email"
             outlined
-            dark
+            
             type="email"
             label="Enter your Email"
             :rules="[(val) => !!val || 'Required!']"
@@ -64,16 +64,17 @@
             v-if="step === 'registerEmailSent'"
             v-model="registerPhone"
             outlined
-            dark
+            
             type="tel"
             label="Enter your Phone Number"
             :rules="[(val) => !!val || 'Required!']"
           />
+
           <q-input
             v-if="step === 'registerPhoneSaved'"
             v-model="registerPassword"
             outlined
-            dark
+            
             :type="isPwd ? 'password' : 'text'"
             label="Choose Password"
             :rules="[(val) => !!val || 'Required!']"
@@ -86,19 +87,21 @@
               />
             </template>
           </q-input>
+
           <q-input
             v-if="step === 'registerPasswordSaved'"
             v-model="registerEmailConfirm"
             outlined
-            dark
+            
             label="Confirm your Email"
             :rules="[(val) => !!val || 'Required!']"
           />
+
           <q-input
             v-if="step === 'registerPassword'"
             v-model="registerPassword"
             outlined
-            dark
+            
             :type="isPwd ? 'password' : 'text'"
             label="Choose a Password"
             :rules="[

@@ -57,7 +57,7 @@ const routes = [
     path: '/user/:name',
     component: () => import('layouts/MainLayout.vue'),
     children: [
-      { path: '', component: () => import('pages/UserPagePage.vue') }
+      { path: '', component: () => import('pages/UserInfoPage.vue') }
     ],
 
     meta: {

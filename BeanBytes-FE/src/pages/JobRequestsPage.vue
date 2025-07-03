@@ -1,55 +1,56 @@
 <template>
-  <q-page class="bg-dark">
-    <div class="row justify-center">
-      <div class="col-12 col-md-8 text-grey-6">
-        <q-tabs
-          v-model="jobsTab"
-          class="q-mb-lg text-h6 lt-md"
-          :align="$q.screen.gt.sm ? 'justify' : 'left'"
-          active-color="primary"
-          indicator-color="primary"
-          no-caps
+  <q-page
+    class="row justify-center"
+    :class="[$q.dark.isActive ? ' text-white' : 'bg-white text-black']"
+  >
+    <div class="col-12 col-md-8 text-grey-6">
+      <q-tabs
+        v-model="jobsTab"
+        class="q-mb-lg text-h6 lt-md"
+        :align="$q.screen.gt.sm ? 'justify' : 'left'"
+        active-color="primary"
+        indicator-color="primary"
+        no-caps
+      >
+        <q-tab name="allJobs" label="All Jobs" />
+        <q-tab name="myJobs" label="My Jobs" />
+      </q-tabs>
+
+      <div class="gt-sm q-py-sm">
+        <q-select
+          filled
+          v-model="model"
+          use-input
+          hide-selected
+          fill-input
+          input-debounce="0"
+          :options="mobileJobsTab"
+          @filter="filterTabs"
+          style="width: 250px; padding-bottom: 32px"
+          class="full-width"
         >
-          <q-tab name="allJobs" label="All Jobs" />
-          <q-tab name="myJobs" label="My Jobs" />
-        </q-tabs>
-
-        <div class="gt-sm q-py-sm">
-          <q-select
-            filled
-            v-model="model"
-            use-input
-            hide-selected
-            fill-input
-            input-debounce="0"
-            :options="mobileJobsTab"
-            @filter="filterTabs"
-            style="width: 250px; padding-bottom: 32px"
-            class="full-width"
-          >
-            <template v-slot:no-option>
-              <q-item>
-                <q-item-section class="text-grey"> No results </q-item-section>
-              </q-item>
-            </template>
-          </q-select>
-        </div>
-
-        <q-list v-if="!loading && jobRequests.length">
-          <JobRequestCard
-            v-for="job in jobRequests"
-            :key="job.id"
-            :job="job"
-            :expandable="jobsTab === 'myJobs'"
-          />
-        </q-list>
-
-        <div v-else-if="!loading" class="q-pa-md text-center text-grey">
-          No job requests available.
-        </div>
-
-        <q-spinner v-if="loading" color="primary" size="50px" />
+          <template v-slot:no-option>
+            <q-item>
+              <q-item-section class="text-grey"> No results </q-item-section>
+            </q-item>
+          </template>
+        </q-select>
       </div>
+
+      <q-list v-if="!loading && jobRequests.length">
+        <JobRequestCard
+          v-for="job in jobRequests"
+          :key="job.id"
+          :job="job"
+          :expandable="jobsTab === 'myJobs'"
+        />
+      </q-list>
+
+      <div v-else-if="!loading" class="q-pa-md text-center text-grey">
+        No job requests available.
+      </div>
+
+      <q-spinner v-if="loading" color="primary" size="50px" />
     </div>
   </q-page>
 </template>
@@ -59,7 +60,6 @@ import { ref, watchEffect, watch } from 'vue'
 import { api } from 'src/boot/axios'
 
 import JobRequestCard from 'src/components/JobRequestCard.vue'
-
 
 const jobsTab = ref('allJobs')
 const jobRequests = ref([])

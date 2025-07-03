@@ -1,13 +1,16 @@
 <template>
-  <q-page class="bg-dark row justify-center">
+  <q-page
+    class="row justify-center"
+    :class="[$q.dark.isActive ? ' text-white' : 'bg-white text-black']"
+  >
     <div class="text-grey-6 col-xs-12 col-sm-10 col-md-10 col-lg-8 col-xl-8">
       <q-list separator>
         <q-item v-if="isLoading">
-          <q-item-section class="text-grey">Loading...</q-item-section>
+          <q-item-section>Loading...</q-item-section>
         </q-item>
 
         <q-item v-for="notification in notifications" :key="notification.id" clickable v-ripple>
-          <q-item-section class="text-secondary">
+          <q-item-section>
             <q-item-label>
               {{ notification.message }}
             </q-item-label>
@@ -20,6 +23,7 @@
               round
               icon="delete"
               color="red"
+              size="12px"
               @click="removeNotification(notification.id)"
             />
           </q-item-section>
@@ -27,7 +31,7 @@
       </q-list>
 
       <q-item v-if="!isLoading && notifications.length === 0">
-        <q-item-section class="text-grey">No notifications yet</q-item-section>
+        <q-item-section>No notifications yet</q-item-section>
       </q-item>
     </div>
   </q-page>

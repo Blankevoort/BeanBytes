@@ -49,7 +49,7 @@
     <!-- Code Snippet -->
 
     <div v-if="post.fullCode" class="q-py-md">
-      <q-card class="bg-dark text-white">
+      <q-card :class="$q.dark.isActive ? 'bg-dark text-white' : 'text-dark'">
         <q-card-section class="row justify-between">
           <div class="text-bold">Code Snippet</div>
           <q-icon
@@ -60,7 +60,7 @@
           />
         </q-card-section>
 
-        <q-separator dark />
+        <q-separator />
 
         <q-card-section>
           <pre><code class="language-javascript">{{ truncatedCode }}</code></pre>

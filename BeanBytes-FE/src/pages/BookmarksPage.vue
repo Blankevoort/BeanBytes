@@ -1,5 +1,8 @@
 <template>
-  <q-page class="bg-dark row justify-center">
+  <q-page
+    class="row justify-center"
+    :class="[$q.dark.isActive ? 'bg-dark text-white' : 'bg-white text-black']"
+  >
     <div class="text-grey-6 col-xs-12 col-sm-10 col-md-10 col-lg-8 col-xl-8">
       <div v-if="posts.length">
         <PostCard

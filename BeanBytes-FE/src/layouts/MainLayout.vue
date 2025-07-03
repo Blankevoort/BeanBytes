@@ -1,6 +1,6 @@
 <template>
   <q-layout view="lHr lpR fFf">
-    <q-header class="text-white bg-dark">
+    <q-header :class="$q.dark.isActive ? 'bg-dark text-grey-2' : 'bg-white text-black'">
       <q-toolbar>
         <q-btn
           v-if="$q.screen.lt.lg"
@@ -33,10 +33,10 @@
             transition-show="scale"
             transition-hide="scale"
           >
-            <q-card class="bg-dark text-white q-pa-md" style="min-width: 250px">
+            <q-card class="text-white q-pa-md" style="min-width: 250px">
               <div v-if="users.length">
                 <div class="text-bold text-grey-4">Users</div>
-                <q-separator dark class="q-my-sm" />
+                <q-separator class="q-my-sm" />
                 <q-list dense>
                   <q-item
                     clickable
@@ -56,7 +56,7 @@
 
               <div v-if="tags.length">
                 <div class="text-bold text-grey-4 q-mt-md">Tags</div>
-                <q-separator dark class="q-my-sm" />
+                <q-separator class="q-my-sm" />
                 <q-list dense>
                   <q-item clickable v-for="tag in tags" :key="'tag-' + tag" @click="goToTag(tag)">
                     <q-item-section avatar>
@@ -78,7 +78,7 @@
         </div>
       </q-toolbar>
 
-      <q-separator dark />
+      <q-separator />
     </q-header>
 
     <q-drawer
@@ -87,7 +87,7 @@
       behavior="desktop"
       v-model="leftDrawerOpen"
       side="left"
-      class="bg-dark text-secondary shadow-2"
+      class="shadow-2"
     >
       <SideBar />
     </q-drawer>
@@ -98,7 +98,7 @@
       behavior="desktop"
       v-model="rightDrawerOpen"
       side="right"
-      class="bg-dark text-secondary shadow-2 relative-position"
+      class="shadow-2 relative-position"
     >
       <TrendingTopics />
 
@@ -128,14 +128,14 @@
       v-if="$q.screen.lt.lg"
       v-model="mergedDrawerOpen"
       side="left"
-      class="bg-dark text-secondary"
+      :class="$q.dark.isActive ? ' text-secondary' : 'text-black'"
     >
-      <q-tabs v-model="mergedTab" dense class="text-white">
+      <q-tabs v-model="mergedTab" dense>
         <q-tab name="menu" label="Menu" />
         <q-tab name="trending" label="Trending" />
       </q-tabs>
 
-      <q-tab-panels v-model="mergedTab" animated class="bg-dark text-white">
+      <q-tab-panels v-model="mergedTab" animated>
         <q-tab-panel name="menu">
           <SideBar />
         </q-tab-panel>

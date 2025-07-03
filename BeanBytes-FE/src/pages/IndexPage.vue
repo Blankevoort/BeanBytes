@@ -1,26 +1,40 @@
 <template>
-  <q-page class="bg-dark row justify-center">
+  <q-page
+    class="row justify-center"
+    :class="[$q.dark.isActive ? 'bg-dark text-white' : 'bg-white text-black']"
+  >
     <div
-      class="text-grey-6 col-xs-12 col-sm-12 col-md-10 col-lg-8 col-xl-6 q-pa-sm"
-      :class="{ 'shadow-4': $q.screen.gt.sm }"
+      class="col-xs-12 col-sm-12 col-md-10 col-lg-8 col-xl-6 q-pa-sm"
+      :class="[
+        $q.screen.gt.sm ? 'shadow-4' : '',
+        $q.dark.isActive ? ' text-grey-4' : 'bg-grey-2 text-grey-8',
+      ]"
     >
       <!-- Add new post -->
 
       <div class="q-pt-lg">
         <q-form @submit="addPost">
           <div class="post-input">
-            <textarea placeholder="New Post" v-model="content"></textarea>
+            <textarea
+              placeholder="New Post"
+              v-model="content"
+              :class="$q.dark.isActive ? 'textarea-dark' : 'textarea-light'"
+            ></textarea>
           </div>
 
-          <div class="post-actions">
+          <div class="post-actions" :class="$q.dark.isActive ? 'actions-dark' : 'actions-light'">
             <div class="action-left">
               <button type="button" class="icon-btn" @click="showDialog = true">
-                <q-icon name="sym_o_image" size="24px" color="grey-6" />
+                <q-icon
+                  name="sym_o_image"
+                  size="24px"
+                  :color="$q.dark.isActive ? 'grey-6' : 'grey-8'"
+                />
               </button>
             </div>
 
             <button type="submit" class="post-btn">
-              <q-icon name="send" size="24px" color="secondary" />
+              <q-icon name="send" size="24px" :color="$q.dark.isActive ? 'secondary' : 'grey-8'" />
             </button>
           </div>
         </q-form>
@@ -45,16 +59,6 @@
 
             <span class="q-pl-sm">Following</span>
           </div>
-
-          <!-- <div class="flex items-center cursor-pointer q-ml-lg" @click="postsTabs = 'featured'">
-            <q-icon
-              size="24px"
-              name="local_fire_department"
-              :color="postsTabs == 'featured' ? 'orange' : ''"
-            />
-
-            <span class="q-pl-sm">Featured</span>
-          </div> -->
 
           <div class="flex items-center cursor-pointer q-ml-lg" @click="postsTabs = 'trends'">
             <q-icon
@@ -311,7 +315,6 @@ onMounted(fetchPosts)
   width: 100%;
   min-height: 120px;
   max-height: 240px;
-  background-color: #2a2a2a;
   border-top-left-radius: 4px;
   border-top-right-radius: 4px;
   padding: 0.75rem;
@@ -382,20 +385,27 @@ onMounted(fetchPosts)
   background: #7e600f;
 }
 
-.code-card {
-  background: #1e1e1e;
-  color: white;
-  font-family: 'Fira Code', monospace;
-}
-
-.code-header {
-  padding: 10px 15px;
-  font-weight: bold;
-}
-
 .code-content {
   max-height: 150px;
   overflow: hidden;
   white-space: pre-wrap;
+}
+
+.textarea-dark {
+  background-color: #2a2a2a;
+  color: #fff;
+}
+
+.textarea-light {
+  background-color: #f0f0f0;
+  color: #000;
+}
+
+.actions-dark {
+  background-color: #1e1e1e;
+}
+
+.actions-light {
+  background-color: #e0e0e0;
 }
 </style>
